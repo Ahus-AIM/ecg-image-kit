@@ -1,13 +1,11 @@
 import os, sys, argparse, json
 import random
 import csv
-import qrcode
 from PIL import Image
 import numpy as np
 from scipy.stats import bernoulli
 from helper_functions import find_files
 from extract_leads import get_paper_ecg
-from HandwrittenText.generate import get_handwritten
 from CreasesWrinkles.creases import get_creased
 from ImageAugmentation.augment import get_augment
 import warnings
@@ -32,13 +30,11 @@ def get_parser():
     parser.add_argument('--num_columns',type=int,default = -1)
     parser.add_argument('--full_mode', type=str,default='II')
     parser.add_argument('--mask_unplotted_samples', action="store_true", default=False)
-    parser.add_argument('--add_qr_code', action="store_true", default=False)
 
     parser.add_argument('-l', '--link', type=str, required=False,default='')
     parser.add_argument('-n','--num_words',type=int,required=False,default=5)
     parser.add_argument('--x_offset',dest='x_offset',type=int,default = 30)
     parser.add_argument('--y_offset',dest='y_offset',type=int,default = 30)
-    parser.add_argument('--hws',dest='handwriting_size_factor',type=float,default = 0.2)
     
     parser.add_argument('-ca','--crease_angle',type=int,default=90)
     parser.add_argument('-nv','--num_creases_vertically',type=int,default=10)
@@ -63,7 +59,6 @@ def get_parser():
 
     parser.add_argument('--deterministic_offset',action="store_true",default=False)
     parser.add_argument('--deterministic_num_words',action="store_true",default=False)
-    parser.add_argument('--deterministic_hw_size',action="store_true",default=False)
 
     parser.add_argument('--deterministic_angle',action="store_true",default=False)
     parser.add_argument('--deterministic_vertical',action="store_true",default=False)
@@ -75,7 +70,6 @@ def get_parser():
     parser.add_argument('--deterministic_temp',action="store_true",default=False)
 
     parser.add_argument('--fully_random',action='store_true',default=False)
-    parser.add_argument('--hw_text',action='store_true',default=False)
     parser.add_argument('--wrinkles',action='store_true',default=False)
     parser.add_argument('--augment',action='store_true',default=False)
     parser.add_argument('--lead_bbox',action='store_true',default=False)
@@ -133,38 +127,17 @@ def run_single_file(args):
         out_array = get_paper_ecg(input_file=filename,header_file=header, configs=configs, mask_unplotted_samples=args.mask_unplotted_samples, start_index=args.start_index, store_configs=args.store_config, store_text_bbox=args.lead_name_bbox, output_directory=args.output_directory,resolution=resolution,papersize=papersize,add_lead_names=lead,add_dc_pulse=bernoulli_dc,add_bw=bernoulli_bw,show_grid=bernoulli_grid,add_print=bernoulli_add_print,pad_inches=padding,font_type=font,standard_colours=standard_colours,full_mode=args.full_mode,bbox = args.lead_bbox, columns = args.num_columns, seed=args.seed)
         
         for out in out_array:
-            if args.store_config:
-                rec_tail, extn = os.path.splitext(out)
-                with open(rec_tail  + '.json', 'r') as file:
-                    json_dict = json.load(file)
-            else:
-                json_dict = None
+            rec_tail, extn = os.path.splitext(out)
+            with open(rec_tail  + '.json', 'r') as file:
+                json_dict = json.load(file)
             if(args.fully_random):
-                hw_text = random.choice((True,False))
                 wrinkles = random.choice((True,False))
                 augment = random.choice((True,False))
             else:
-                hw_text = args.hw_text
                 wrinkles = args.wrinkles
                 augment = args.augment
             
-            #Handwritten text addition
-            if(hw_text):
-                num_words = args.num_words if (args.deterministic_num_words) else random.choice(range(2,args.num_words+1))
-                x_offset = args.x_offset if (args.deterministic_offset) else random.choice(range(1,args.x_offset+1))
-                y_offset = args.y_offset if (args.deterministic_offset) else random.choice(range(1,args.y_offset+1))
 
-                out = get_handwritten(link=args.link,num_words=num_words,input_file=out,output_dir=args.output_directory,x_offset=x_offset,y_offset=y_offset,handwriting_size_factor=args.handwriting_size_factor,bbox = args.lead_bbox)
-            else:
-                num_words = 0
-                x_offset = 0
-                y_offset = 0
-
-            if args.store_config == 2:
-                json_dict['handwritten_text'] = bool(hw_text)
-                json_dict['num_words'] = num_words
-                json_dict['x_offset_for_handwritten_text'] = x_offset
-                json_dict['y_offset_for_handwritten_text'] = y_offset
             
             if(wrinkles):
                 ifWrinkles = True
@@ -223,26 +196,6 @@ def run_single_file(args):
                     f.write(json_object)
 
 
-            if args.add_qr_code:
-                img = np.array(Image.open(out))
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=5,
-                    border=4,
-                )
-                qr.add_data(args.encoding)
-                qr.make(fit=True)
-
-                qr_img = np.array(qr.make_image(fill_color="black", back_color="white"))
-                qr_img_color = np.zeros((qr_img.shape[0], qr_img.shape[1], 3))
-                qr_img_color[:,:,0] = qr_img*255.
-                qr_img_color[:,:,1] = qr_img*255.
-                qr_img_color[:,:,2] = qr_img*255.
-                
-                img[:qr_img.shape[0], -qr_img.shape[1]:, :3] = qr_img_color
-                img = Image.fromarray(img)
-                img.save(out)
 
 
         return len(out_array)
