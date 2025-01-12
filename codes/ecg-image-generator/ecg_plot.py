@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import random
 import matplotlib.pyplot as plt
@@ -6,7 +7,9 @@ import matplotlib
 from matplotlib.ticker import AutoMinorLocator
 from math import ceil
 from PIL import Image
-import csv
+from io import BytesIO
+import pickle
+from PIL import Image
 
 standard_values = {
     "y_grid_size": 0.5,
@@ -27,37 +30,6 @@ standard_values = {
     "width": 11,
     "height": 8.5,
 }
-
-standard_major_colors = {
-    "colour1": (0.4274, 0.196, 0.1843),  # brown
-    "colour2": (1, 0.796, 0.866),  # pink
-    "colour3": (0.0, 0.0, 0.4),  # blue
-    "colour4": (0, 0.3, 0.0),  # green
-    "colour5": (1, 0, 0),  # red
-}
-
-
-standard_minor_colors = {
-    "colour1": (0.5882, 0.4196, 0.3960),
-    "colour2": (0.996, 0.9294, 0.9725),
-    "colour3": (0.0, 0, 0.7),
-    "colour4": (0, 0.8, 0.3),
-    "colour5": (0.996, 0.8745, 0.8588),
-}
-
-papersize_values = {
-    "A0": (33.1, 46.8),
-    "A1": (33.1, 23.39),
-    "A2": (16.54, 23.39),
-    "A3": (11.69, 16.54),
-    "A4": (8.27, 11.69),
-    "letter": (8.5, 11),
-}
-
-
-def inches_to_dots(value, resolution):
-    return value * resolution
-
 
 # Function to plot raw ecg signal
 def ecg_plot(
@@ -114,7 +86,6 @@ def ecg_plot(
     # secs represents how many seconds of ecg are plotted
     # leads represent number of leads in the ecg
     # rows are calculated based on corresponding number of leads and number of columns
-
     matplotlib.use("Agg")
 
     # check if the ecg dict is empty
@@ -134,20 +105,21 @@ def ecg_plot(
     # Grid calibration
     # Each big grid corresponds to 0.2 seconds and 0.5 mV
     # To do: Select grid size in a better way
+    random_line_width = random.uniform(0.5, 1.5)
+    random_grid_line_width = random.uniform(0.9, 1.5)
+    random_lead_fontsize = random.uniform(0.7, 2.0)
+    random_lead_name_offset = random.uniform(-1.0, 2.0)
     y_grid_size = standard_values["y_grid_size"]
     x_grid_size = standard_values["x_grid_size"]
-    grid_line_width = standard_values["grid_line_width"]
-    lead_name_offset = standard_values["lead_name_offset"]
-    lead_fontsize = standard_values["lead_fontsize"]
+    grid_line_width = standard_values["grid_line_width"] * random_grid_line_width
+    lead_name_offset = standard_values["lead_name_offset"] * random_lead_name_offset
+    lead_fontsize = standard_values["lead_fontsize"] * random_lead_fontsize
+    line_width = standard_values["line_width"] * random_line_width
 
     # Set max and min coordinates to mark grid. Offset x_max slightly (i.e by 1 column width)
 
-    if papersize == "":
-        width = standard_values["width"]
-        height = standard_values["height"]
-    else:
-        width = papersize_values[papersize][1]
-        height = papersize_values[papersize][0]
+    width = standard_values["width"]
+    height = standard_values["height"]
 
     y_grid = standard_values["y_grid_inch"]
     x_grid = standard_values["x_grid_inch"]
@@ -173,39 +145,29 @@ def ecg_plot(
 
     # Mark grid based on whether we want black and white or colour
 
-    if style == "bw":
-        color_major = (0.4, 0.4, 0.4)
-        color_minor = (0.75, 0.75, 0.75)
-        color_line = (0, 0, 0)
-    elif standard_colours > 0:
-        random_colour_index = standard_colours
-        color_major = standard_major_colors["colour" + str(random_colour_index)]
-        color_minor = standard_minor_colors["colour" + str(random_colour_index)]
-        grey_random_color = random.uniform(0, 0.2)
-        color_line = (grey_random_color, grey_random_color, grey_random_color)
-    else:
-        major_random_color_sampler_red = random.uniform(0, 0.8)
-        major_random_color_sampler_green = random.uniform(0, 0.5)
-        major_random_color_sampler_blue = random.uniform(0, 0.5)
+    major_random_color_sampler_red = random.uniform(0.5, 0.8)
+    major_random_color_sampler_green = random.uniform(0, 0.5)
+    major_random_color_sampler_blue = random.uniform(0, 0.5)
 
-        minor_offset = random.uniform(0, 0.2)
-        minor_random_color_sampler_red = major_random_color_sampler_red + minor_offset
-        minor_random_color_sampler_green = random.uniform(0, 0.5) + minor_offset
-        minor_random_color_sampler_blue = random.uniform(0, 0.5) + minor_offset
+    minor_offset = random.uniform(0, 0.2)
+    minor_random_color_sampler_red = major_random_color_sampler_red + minor_offset
+    minor_random_color_sampler_green = random.uniform(0, 0.5) + minor_offset
+    minor_random_color_sampler_blue = random.uniform(0, 0.5) + minor_offset
 
-        grey_random_color = random.uniform(0, 0.2)
-        color_major = (
-            major_random_color_sampler_red,
-            major_random_color_sampler_green,
-            major_random_color_sampler_blue,
-        )
-        color_minor = (
-            minor_random_color_sampler_red,
-            minor_random_color_sampler_green,
-            minor_random_color_sampler_blue,
-        )
+    grey_random_color = random.uniform(0, 0.2)
+    color_major = (
+        major_random_color_sampler_red,
+        major_random_color_sampler_green,
+        major_random_color_sampler_blue,
+    )
+    color_minor = (
+        minor_random_color_sampler_red,
+        minor_random_color_sampler_green,
+        minor_random_color_sampler_blue,
+    )
 
-        color_line = (grey_random_color, grey_random_color, grey_random_color)
+    color_line = (grey_random_color, grey_random_color, grey_random_color)
+    # color_line = (major_random_color_sampler_red,major_random_color_sampler_green,major_random_color_sampler_blue)
 
     # Set grid
     # Standard ecg has grid size of 0.5 mV and 0.2 seconds. Set ticks accordingly
@@ -320,6 +282,7 @@ def ecg_plot(
                     linewidth=line_width * 1.5,
                     color=color_line,
                 )
+                # print(dc_pulse,y_offset)
                 if bbox:
                     renderer1 = fig.canvas.get_renderer()
                     transf = ax.transData.inverted()
@@ -381,20 +344,21 @@ def ecg_plot(
             xi, yi = ax.transData.transform((xi, yi))
             yi = json_dict["height"] - yi
             current_lead_ds["plotted_pixels"].append([round(yi, 2), round(xi, 2)])
-
         leads_ds.append(current_lead_ds)
-
-        if columns > 1 and (i + 1) % columns != 0:
-            sep_x = [len(ecg[leadName]) * step + x_offset + dc_offset + x_gap] * round(
-                tickLength * y_grid_dots
-            )
-            sep_x = np.array(sep_x)
-            sep_y = np.linspace(
-                y_offset - tickLength / 2 * y_grid_dots * tickSize_step,
-                y_offset + tickSize_step * y_grid_dots * tickLength / 2,
-                len(sep_x),
-            )
-            ax.plot(sep_x, sep_y, linewidth=line_width * 3, color=color_line)
+        if random.random() < 0.5:
+            if columns > 1 and (i + 1) % columns != 0:
+                # sep_x = [len(ecg[leadName])*step + x_offset + dc_offset + x_gap] * round(8*y_grid_dots)
+                sep_x = [
+                    len(ecg[leadName]) * step + x_offset + dc_offset + x_gap
+                ] * round(tickLength * y_grid_dots)
+                sep_x = np.array(sep_x)
+                # sep_y = np.linspace(y_offset - 4*y_grid_dots*step, y_offset + 4*y_grid_dots*step, len(sep_x))
+                sep_y = np.linspace(
+                    y_offset - tickLength / 2 * y_grid_dots * tickSize_step,
+                    y_offset + tickSize_step * y_grid_dots * tickLength / 2,
+                    len(sep_x),
+                )
+                ax.plot(sep_x, sep_y, linewidth=line_width * 3, color=color_line)
 
     # Plotting longest lead for 12 seconds
     if full_mode != "None":
@@ -434,6 +398,8 @@ def ecg_plot(
                 linewidth=line_width * 1.5,
                 color=color_line,
             )
+
+            # print(dc_pulse,row_height/2-lead_name_offset + 0.8)
 
             if bbox:
                 renderer1 = fig.canvas.get_renderer()
@@ -488,6 +454,7 @@ def ecg_plot(
         current_lead_ds["start_sample"] = start_index
         current_lead_ds["end_sample"] = start_index + len(ecg["full" + full_mode])
         current_lead_ds["plotted_pixels"] = []
+        current_lead_ds["dc_offset"] = dc_full_lead_offset
         for i in range(len(x_vals)):
             xi, yi = x_vals[i], y_vals[i]
             xi, yi = ax.transData.transform((xi, yi))
@@ -498,10 +465,14 @@ def ecg_plot(
     head, tail = os.path.split(rec_file_name)
     rec_file_name = os.path.join(output_dir, tail)
 
-
     # change x and y res
     ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize)
     ax.text(4, 0.5, "10mm/mV", fontsize=lead_fontsize)
+
+    print(color_minor, color_major)
+    if np.random.rand() < 0.2:
+        color_minor = (0.6, 0.6, 0.6)
+        color_major = (0.3, 0.3, 0.3)
 
     if show_grid:
         ax.set_xticks(np.arange(x_min, x_max, x_grid_size))
@@ -514,7 +485,6 @@ def ecg_plot(
         ax.grid(
             which="major", linestyle="-", linewidth=grid_line_width, color=color_major
         )
-
         ax.grid(
             which="minor", linestyle="-", linewidth=grid_line_width, color=color_minor
         )
@@ -530,10 +500,145 @@ def ecg_plot(
     else:
         ax.grid(False)
 
+    # find all dc pulses
+    dc_pulses_xy_data = []  # We expect four pulses
+    straight_lines_data = []
+    for obj in fig.findobj(match=lambda obj: isinstance(obj, plt.Line2D)):
+        xdata = obj.get_xdata()
+        ydata = obj.get_ydata()
+        if len(xdata) == 24:
+            dc_pulse = []
+            for xi, yi in zip(xdata, ydata):
+                xi, yi = ax.transData.transform((xi, yi))
+                yi = json_dict["height"] - yi
+                dc_pulse.append([int(yi - 0.5), int(xi - 0.5)])
+            dc_pulses_xy_data.append(dc_pulse)
+        else:
+            if len(xdata) == 315:
+                straight_line = []
+                for xi, yi in zip(xdata, ydata):
+                    xi, yi = ax.transData.transform((xi, yi))
+                    yi = json_dict["height"] - yi
+                    straight_line.append([int(yi - 0.5), int(xi - 0.5)])
+                straight_lines_data.append(straight_line)
+
     plt.savefig(os.path.join(output_dir, tail + ".png"), dpi=resolution)
     plt.close(fig)
     plt.clf()
     plt.cla()
+
+    #######################
+    def copy_figure(fig):
+        """Copy a Matplotlib figure."""
+        buf = BytesIO()
+        pickle.dump(fig, buf)
+        buf.seek(0)
+        return pickle.load(buf)
+
+    def fig_to_array(fig):
+        """Convert a Matplotlib figure to a numpy array."""
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
+        img = Image.open(buf)
+        return np.array(img)
+
+    def remove_text_objects(fig):
+        """Remove text objects from a Matplotlib figure."""
+        text_objects = fig.findobj(match=plt.Text)
+        for text_obj in text_objects:
+            text_obj.set_visible(False)
+        return text_objects
+
+    def remove_line2d_objects_315(fig):
+        """Remove Line2D objects of length 315 from a Matplotlib figure."""
+        line2d_objects = []
+        for line in fig.findobj(match=plt.Line2D):
+            if len(line.get_xydata()) == 315:
+                line.set_visible(False)
+                line2d_objects.append(line)
+        return line2d_objects
+
+    def remove_line2d_objects_250_1000(fig):
+        """Remove Line2D objects of length 315 from a Matplotlib figure."""
+        line2d_objects = []
+        for line in fig.findobj(match=plt.Line2D):
+            if len(line.get_xydata()) in (250, 1000):
+                line.set_visible(False)
+                line2d_objects.append(line)
+        return line2d_objects
+
+    def remove_line2d_objects_24(fig):
+        """Remove Line2D objects of length 315 from a Matplotlib figure."""
+        line2d_objects = []
+        for line in fig.findobj(match=plt.Line2D):
+            if len(line.get_xydata()) == 24:
+                line.set_visible(False)
+                line2d_objects.append(line)
+        return line2d_objects
+
+    def restore_objects(objects):
+        """Restore visibility of given objects in a Matplotlib figure."""
+        for obj in objects:
+            obj.set_visible(True)
+
+    def render_text_layer(fig):
+        """Render only the text from a Matplotlib figure on a blank canvas."""
+
+        # Step 1: Copy the figure
+        fig_copy = copy_figure(fig)
+        # Step 2: Render the original figure to a numpy array
+        original_array = fig_to_array(fig_copy)
+        # Step 3: Remove everything plotted
+        removed_texts = remove_text_objects(fig_copy)
+        removed_lines_315 = remove_line2d_objects_315(fig_copy)
+        removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
+        removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
+        for line in fig_copy.findobj(match=plt.Line2D):
+            if line.get_linewidth() == grid_line_width:
+                line.set_visible(False)
+
+        # Step 4: Render figure with only specified parts
+        restore_objects(removed_texts)
+        restore_objects(removed_lines_315)
+        greyscale_text = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
+        removed_texts = remove_text_objects(fig_copy)
+        removed_lines_315 = remove_line2d_objects_315(fig_copy)
+
+        restore_objects(removed_control_signal_lines)
+        greyscale_control_signal = 255 - np.max(
+            fig_to_array(fig_copy)[..., :3], axis=-1
+        )
+        removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
+
+        restore_objects(removed_signal_lines)
+        greyscale_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
+        removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
+
+        # Step 6: Restore the visibility of the removed objects
+        for line in fig_copy.findobj(match=plt.Line2D):
+            if line.get_linewidth() == grid_line_width:
+                line.set_visible(True)
+        restore_objects(removed_texts)
+        restore_objects(removed_lines_315)
+        restore_objects(removed_control_signal_lines)
+        restore_objects(removed_signal_lines)
+
+        # fig, ax = plt.subplots(1,3)
+        # ax[0].imshow(greyscale_signal, cmap='gray')
+        # ax[1].imshow(greyscale_control_signal, cmap='gray')
+        # ax[2].imshow(greyscale_text, cmap='gray')
+        # for a in ax:
+        #     a.axis('off')
+        # plt.tight_layout()
+
+        # plt.savefig(os.path.join(output_dir, tail + '_greyscale.png'), dpi=800)
+        # assert False
+
+        return greyscale_signal, greyscale_control_signal, greyscale_text
+
+    #######################
+    signal_map, control_signal_map, text_map = render_text_layer(fig)
 
     if pad_inches != 0:
 
@@ -559,5 +664,28 @@ def ecg_plot(
         plt.cla()
 
     json_dict["leads"] = leads_ds
+
+    ##### MODIFICATIONS #####
+    json_file = os.path.join(output_dir, tail + ".json")
+    with open(json_file, "w") as f:
+        json.dump(json_dict, f)
+
+    w, h = json_dict["width"], json_dict["height"]
+    mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
+
+    mask[:, :, 2] = signal_map.astype(np.uint8)
+    mask[:, :, 1] = text_map.astype(np.uint8) + control_signal_map.astype(np.uint8)
+    mask[:, :3] = 0
+    mask[:, -3:] = 0
+    mask[:3, :] = 0
+    mask[-3:, :] = 0
+    mask[:, :, 1][mask[:, :, 2] > 0] = 0
+
+    # Save the sparse tensor
+    mask_file = os.path.join(output_dir, tail + "mask_.png")
+    # save the mask as a png at mask_file
+    print(mask.shape, mask.dtype)
+    Image.fromarray(mask).save(mask_file)
+    ###### END MODIFICATIONS ######
 
     return x_grid_dots, y_grid_dots
