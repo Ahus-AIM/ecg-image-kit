@@ -94,9 +94,9 @@ def get_paper_ecg(
     ecg_frame = []
     end_flag = False
     start = 0
-    lead_length_in_seconds = configs["paper_len"] / columns
-    abs_lead_step = configs["abs_lead_step"]
-    format_4_by_3 = configs["format_4_by_3"]
+    lead_length_in_seconds = 10 / columns
+    abs_lead_step = 10
+    format_4_by_3= [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
 
     segmented_ecg_data = {}
 

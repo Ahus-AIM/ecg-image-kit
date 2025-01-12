@@ -29,26 +29,26 @@ standard_values = {
     "height": 8.5,
 }
 
-random_values = {
-    "line_width_min": 0.5,
-    "line_width_max": 1.5,
-    "grid_line_width_min": 0.9,
-    "grid_line_width_max": 1.5,
-    "lead_fontsize_min": 0.7,
-    "lead_fontsize_max": 2.0,
-    "lead_name_offset_min": -1.0,
-    "lead_name_offset_max": 2.0,
-    "major_red_min": 0.4,
-    "major_red_max": 1.0,
-    "major_green_min": 0.2,
-    "major_green_max": 0.7,
-    "major_blue_min": 0.2,
-    "major_blue_max": 0.7,
-    "minor_offset_min": 0.0,
-    "minor_offset_max": 0.3,
-    "grey_min": 0.0,
-    "grey_max": 0.5,
-}
+# random_values = {
+#     "line_width_min": 0.5,
+#     "line_width_max": 1.5,
+#     "grid_line_width_min": 0.9,
+#     "grid_line_width_max": 1.5,
+#     "lead_fontsize_min": 0.7,
+#     "lead_fontsize_max": 2.0,
+#     "lead_name_offset_min": -1.0,
+#     "lead_name_offset_max": 2.0,
+#     "major_red_min": 0.4,
+#     "major_red_max": 1.0,
+#     "major_green_min": 0.2,
+#     "major_green_max": 0.7,
+#     "major_blue_min": 0.2,
+#     "major_blue_max": 0.7,
+#     "minor_offset_min": 0.0,
+#     "minor_offset_max": 0.3,
+#     "grey_min": 0.0,
+#     "grey_max": 0.5,
+# }
 
 
 def get_major_colors(random_values):
@@ -240,7 +240,6 @@ def ecg_plot(
     start_index=-1,
     store_configs=0,
     lead_length_in_seconds=10,
-    random_values=random_values,
 ):
     # Inputs :
     # ecg - Dictionary of ecg signal with lead names as keys
@@ -258,6 +257,8 @@ def ecg_plot(
     # show_grid - Turn grid on or off
 
     matplotlib.use("Agg")
+
+    random_values = configs["random_values"]
 
     fonts_folder = "src/Fonts"
     font_files = [f for f in os.listdir(fonts_folder) if f.endswith(".ttf")]
@@ -340,9 +341,9 @@ def ecg_plot(
 
     leads_ds = []
 
-    leadNames_12 = configs["leadNames_12"]
-    tickLength = configs["tickLength"]
-    tickSize_step = configs["tickSize_step"]
+    leadNames_12 = ["III", 'aVF', 'V3', 'V6', 'II', 'aVL', 'V2', 'V5', 'I', 'aVR', 'V1', 'V4']
+    tickLength =8
+    tickSize_step = 0.002
 
     for i in np.arange(len(lead_index)):
         current_lead_ds = dict()
@@ -429,12 +430,14 @@ def ecg_plot(
         y_vals = ecg[leadName] + y_offset
 
         st = start_index
-        if columns == 4 and leadName in configs["format_4_by_3"][1]:
-            st = start_index + int(sample_rate * configs["paper_len"] / columns)
-        elif columns == 4 and leadName in configs["format_4_by_3"][2]:
-            st = start_index + int(2 * sample_rate * configs["paper_len"] / columns)
-        elif columns == 4 and leadName in configs["format_4_by_3"][3]:
-            st = start_index + int(3 * sample_rate * configs["paper_len"] / columns)
+
+        leadnames = [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
+        if columns == 4 and leadName in leadnames[1]:
+            st = start_index + int(sample_rate * 10 / columns)
+        elif columns == 4 and leadName in leadnames[2]:
+            st = start_index + int(2 * sample_rate * 10 / columns)
+        elif columns == 4 and leadName in leadnames[3]:
+            st = start_index + int(3 * sample_rate *10 / columns)
         current_lead_ds["start_sample"] = st
         current_lead_ds["end_sample"] = st + len(ecg[leadName])
         current_lead_ds["plotted_pixels"] = []
@@ -590,14 +593,6 @@ def ecg_plot(
             color=color_minor,
         )
 
-        if store_configs == 2:
-            json_dict["grid_line_color_major"] = [
-                round(x * 255.0, 2) for x in color_major
-            ]
-            json_dict["grid_line_color_minor"] = [
-                round(x * 255.0, 2) for x in color_minor
-            ]
-            json_dict["ecg_plot_color"] = [round(x * 255.0, 2) for x in color_line]
     else:
         ax.grid(False)
 

@@ -2,6 +2,7 @@ import os
 import random
 import warnings
 from scipy.stats import bernoulli
+from tqdm import tqdm   
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
 from helper_functions import read_config_file
@@ -34,7 +35,8 @@ def run_single_file(configs):
     end_index = configs["end_index"]
 
     # Dynamically generate input and header files based on the indices
-    for i in range(start_index, end_index + 1):
+    loading_bar = tqdm(range(start_index, end_index + 1), desc="Generating ECG Images")
+    for i in loading_bar:
         folder = f"{i // 1000 * 1000:05d}"
         file_index = f"{i:05d}"
 

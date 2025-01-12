@@ -2,34 +2,31 @@ input_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
 header_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
 output_directory: "./generated_images/"
 
-# Start and End Indices (ECG records)
+# start and end indices of ECG records
 start_index: 1
 end_index: 5
 
-wrinkles: true
+# image parameters
+wrinkles: true # overlay wrinkles on the ECG images
 resolution: 200
-padding: 0
-papersize: ""
-lead: true
-bernoulli_dc: 0.5
-bernoulli_bw: 0
-bernoulli_grid: 1
-bernoulli_add_print: 0
-standard_colours: false
-mask_unplotted_samples: false
-store_configs: 0
-store_text_bbox: false
-full_mode: "II"
-bbox: false
-columns: -1
-seed: 42
-paper_len: 10.0
-abs_lead_step: 10
-format_4_by_3: [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
-leadNames_12: ["III", 'aVF', 'V3', 'V6', 'II', 'aVL', 'V2', 'V5', 'I', 'aVR', 'V1', 'V4']
-tickLength: 8 
-tickSize_step: 0.002 
+bernoulli_dc: 0.5 # probability of adding the 1 mV control signal
 
-# Wrinkle configurations
-wrinkles_config:
-  ifWrinkles: true
+random_values:
+  line_width_min: 0.5 # signal width
+  line_width_max: 2.0
+  grid_line_width_min: 0.9 # grid width
+  grid_line_width_max: 1.6
+  lead_fontsize_min: 0.7 # font size for denoting leads, for example, I, II, III, etc.
+  lead_fontsize_max: 2.0
+  lead_name_offset_min: -1.0 # vertical offset for lead names
+  lead_name_offset_max: 2.0
+  major_red_min: 0.6 # color of the major grid lines
+  major_red_max: 1.0
+  major_green_min: 0.4
+  major_green_max: 0.7
+  major_blue_min: 0.4
+  major_blue_max: 0.7
+  minor_offset_min: 0.1 # how much brighter the minor grid lines are compared to the major grid lines
+  minor_offset_max: 0.3
+  grey_min: 0.0 # color of the ECG signal
+  grey_max: 0.3
