@@ -262,7 +262,8 @@ def get_creased(
         # shift image brightness so mean is (near) mid gray
         mean = np.mean(wrinkles)
         shift = mean - 0.4
-        wrinkles = cv2.subtract(wrinkles, shift)
+        shift_img = np.full_like(wrinkles, shift, dtype=np.float32)
+        wrinkles = cv2.subtract(wrinkles, shift_img)
 
         transform = wrinkles * 1.2
         # threshold wrinkles and invert
