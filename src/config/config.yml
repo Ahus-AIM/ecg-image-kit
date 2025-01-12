@@ -1,5 +1,5 @@
-input_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
-header_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
+input_directory: "./data/ptb-xl/"
+header_directory: "./data/ptb-xl/"
 output_directory: "./generated_images/"
 
 # start and end indices of ECG records
