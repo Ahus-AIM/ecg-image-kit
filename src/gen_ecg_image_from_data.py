@@ -15,6 +15,8 @@ def run_single_file(configs):
     input_directory = configs["input_directory"]
     header_directory = configs["header_directory"]
     output_directory = configs["output_directory"]
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
     wrinkles = configs.get("wrinkles", False)
 
     resolution = configs.get("resolution", 200)
