@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import random
-import argparse
 import os
 from skimage import util
 from PIL import Image
@@ -265,7 +264,7 @@ def get_creased(
         shift = mean - 0.4
         wrinkles = cv2.subtract(wrinkles, shift)
 
-        transform = wrinkles * 1.2 
+        transform = wrinkles * 1.2
         # threshold wrinkles and invert
         thresh = cv2.threshold(transform, 0.6, 1, cv2.THRESH_BINARY)[1]
         thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)

@@ -2,7 +2,7 @@ import os
 import random
 import warnings
 from scipy.stats import bernoulli
-from tqdm import tqdm   
+from tqdm import tqdm
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
 from helper_functions import read_config_file
@@ -76,15 +76,21 @@ def run_single_file(configs):
                     output_directory=output_directory,
                     ifWrinkles=wrinkles_config.get("ifWrinkles", True),
                     ifCreases=wrinkles_config.get("ifCreases", True),
-                    crease_angle=wrinkles_config.get("crease_angle", random.choice(range(0, 90))),
-                    num_creases_vertically=wrinkles_config.get("num_creases_vertically", random.choice(range(1, 5))),
-                    num_creases_horizontally=wrinkles_config.get("num_creases_horizontally", random.choice(range(1, 5))),
+                    crease_angle=wrinkles_config.get(
+                        "crease_angle", random.choice(range(0, 90))
+                    ),
+                    num_creases_vertically=wrinkles_config.get(
+                        "num_creases_vertically", random.choice(range(1, 5))
+                    ),
+                    num_creases_horizontally=wrinkles_config.get(
+                        "num_creases_horizontally", random.choice(range(1, 5))
+                    ),
                     bbox=wrinkles_config.get("bbox", False),
                 )
     return len(out_array)
 
 
 if __name__ == "__main__":
-    config_path = "src/config.yml"
+    config_path = "src/config/config.yml"
     configs = read_config_file(config_path)
     run_single_file(configs)

@@ -341,8 +341,21 @@ def ecg_plot(
 
     leads_ds = []
 
-    leadNames_12 = ["III", 'aVF', 'V3', 'V6', 'II', 'aVL', 'V2', 'V5', 'I', 'aVR', 'V1', 'V4']
-    tickLength =8
+    leadNames_12 = [
+        "III",
+        "aVF",
+        "V3",
+        "V6",
+        "II",
+        "aVL",
+        "V2",
+        "V5",
+        "I",
+        "aVR",
+        "V1",
+        "V4",
+    ]
+    tickLength = 8
     tickSize_step = 0.002
 
     for i in np.arange(len(lead_index)):
@@ -431,13 +444,18 @@ def ecg_plot(
 
         st = start_index
 
-        leadnames = [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
+        leadnames = [
+            ["I", "II", "III"],
+            ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"],
+            ["V1", "V2", "V3"],
+            ["V4", "V5", "V6"],
+        ]
         if columns == 4 and leadName in leadnames[1]:
             st = start_index + int(sample_rate * 10 / columns)
         elif columns == 4 and leadName in leadnames[2]:
             st = start_index + int(2 * sample_rate * 10 / columns)
         elif columns == 4 and leadName in leadnames[3]:
-            st = start_index + int(3 * sample_rate *10 / columns)
+            st = start_index + int(3 * sample_rate * 10 / columns)
         current_lead_ds["start_sample"] = st
         current_lead_ds["end_sample"] = st + len(ecg[leadName])
         current_lead_ds["plotted_pixels"] = []

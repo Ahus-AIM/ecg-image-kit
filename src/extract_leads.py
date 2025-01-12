@@ -15,7 +15,6 @@ from helper_functions import (
 from ecg_plot import ecg_plot
 
 
-# Run script.
 def get_paper_ecg(
     input_file,
     header_file,
@@ -96,7 +95,12 @@ def get_paper_ecg(
     start = 0
     lead_length_in_seconds = 10 / columns
     abs_lead_step = 10
-    format_4_by_3= [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
+    format_4_by_3 = [
+        ["I", "II", "III"],
+        ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"],
+        ["V1", "V2", "V3"],
+        ["V4", "V5", "V6"],
+    ]
 
     segmented_ecg_data = {}
 
