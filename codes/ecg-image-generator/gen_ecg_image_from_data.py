@@ -1,18 +1,39 @@
-import os, sys, argparse, json
+import os
+import sys
+import argparse
+import json
 import random
 import csv
-from PIL import Image
+import warnings
+import yaml
 import numpy as np
+from PIL import Image
 from scipy.stats import bernoulli
 from helper_functions import find_files
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
 from ImageAugmentation.augment import get_augment
-import warnings
-from helper_functions import read_config_file
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings("ignore")
+
+def read_config_file(config_file):
+    """Read YAML config file
+
+    Args:
+        config_file (str): Complete path to the config file
+
+    Returns:
+        configs (dict): Returns dictionary with all the configs
+    """
+    with open(config_file) as f:
+        yamlObject = yaml.safe_load(f)
+
+    args = dict()
+    for key in yamlObject:
+        args[key] = yamlObject[key]
+
+    return args
 
 
 def get_parser():

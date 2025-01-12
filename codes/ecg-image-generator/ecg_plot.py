@@ -4,7 +4,6 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.ticker import AutoMinorLocator
-from TemplateFiles.generate_template import generate_template
 from math import ceil
 from PIL import Image
 import csv
@@ -499,28 +498,6 @@ def ecg_plot(
     head, tail = os.path.split(rec_file_name)
     rec_file_name = os.path.join(output_dir, tail)
 
-    # printed template file
-    if print_txt:
-        x_offset = 0.05
-        y_offset = int(y_max)
-        printed_text, attributes, flag = generate_template(full_header_file)
-
-        if flag:
-            for l in range(0, len(printed_text), 1):
-
-                for j in printed_text[l]:
-                    curr_l = ""
-                    if j in attributes.keys():
-                        curr_l += str(attributes[j])
-                    ax.text(x_offset, y_offset, curr_l, fontsize=lead_fontsize)
-                    x_offset += 3
-
-                y_offset -= 0.5
-                x_offset = 0.05
-        else:
-            for line in printed_text:
-                ax.text(x_offset, y_offset, line, fontsize=lead_fontsize)
-                y_offset -= 0.5
 
     # change x and y res
     ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize)
