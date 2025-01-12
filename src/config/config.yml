@@ -1,6 +1,6 @@
 input_directory: "./data/ptb-xl/"
 header_directory: "./data/ptb-xl/"
-output_directory: "./generated_images/"
+output_directory: "./data/generated_images/"
 
 # start and end indices of ECG records
 start_index: 1
