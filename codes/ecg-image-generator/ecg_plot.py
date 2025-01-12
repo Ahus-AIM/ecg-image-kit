@@ -40,16 +40,16 @@ random_values = {
     "lead_fontsize_max": 2.0,
     "lead_name_offset_min": -1.0,
     "lead_name_offset_max": 2.0,
-    "major_red_min": 0.1,
+    "major_red_min": 0.4,
     "major_red_max": 1.0,
-    "major_green_min": 0.0,
-    "major_green_max": 0.5,
-    "major_blue_min": 0.0,
-    "major_blue_max": 0.5,
+    "major_green_min": 0.2,
+    "major_green_max": 0.7,
+    "major_blue_min": 0.2,
+    "major_blue_max": 0.7,
     "minor_offset_min": 0.0,
-    "minor_offset_max": 0.5,
+    "minor_offset_max": 0.3,
     "grey_min": 0.0,
-    "grey_max": 0.3,
+    "grey_max": 0.5,
 }
 
 def get_major_colors(random_values):
@@ -252,6 +252,14 @@ def ecg_plot(
 
     matplotlib.use("Agg")
 
+    fonts_folder = "Fonts"
+    font_files = [f for f in os.listdir(fonts_folder) if f.endswith('.ttf')]
+    random_font = random.choice(font_files)
+    font_path = os.path.join(os.getcwd(), fonts_folder, random_font)
+    custom_font = matplotlib.font_manager.FontProperties(fname=font_path)
+    # matplotlib.rcParams['font.family'] = custom_font.get_name()
+
+
     secs = lead_length_in_seconds
     leads = len(lead_index)
     rows = int(ceil(leads / columns))
@@ -355,6 +363,8 @@ def ecg_plot(
                 y_offset - lead_name_offset - 0.2,
                 leadName,
                 fontsize=lead_fontsize,
+                fontproperties=custom_font,
+                color=color_line,
             )
 
             if store_text_bbox:
@@ -498,6 +508,8 @@ def ecg_plot(
                 row_height / 2 - lead_name_offset,
                 full_mode,
                 fontsize=lead_fontsize,
+                fontproperties=custom_font,
+                color=color_line,
             )
 
             if store_text_bbox:
@@ -595,13 +607,8 @@ def ecg_plot(
     rec_file_name = os.path.join(output_dir, tail)
 
     # change x and y res
-    ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize)
-    ax.text(4, 0.5, "10mm/mV", fontsize=lead_fontsize)
-
-    print(color_minor, color_major)
-    if np.random.rand() < 0.2:
-        color_minor = (0.6, 0.6, 0.6)
-        color_major = (0.3, 0.3, 0.3)
+    ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
+    ax.text(4, 0.5, "10mm/mV", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
 
     if show_grid:
         ax.set_xticks(np.arange(x_min, x_max, x_grid_size))
