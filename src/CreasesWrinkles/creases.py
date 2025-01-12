@@ -8,20 +8,6 @@ from PIL import Image
 import heapq
 
 
-def get_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-s", dest="source_dir", type=str, required=True)
-    parser.add_argument("-i", "--input_file", type=str, required=True)
-    parser.add_argument("-o", "--output_directory", type=str, required=True)
-    parser.add_argument("--wrinkles", action="store_true", default=False)
-    parser.add_argument("--creases", action="store_true", default=False)
-    parser.add_argument("-ca", "--crease_angle", type=int, default=0)
-    parser.add_argument("-nv", "--num_creases_vertically", type=int, default=3)
-    parser.add_argument("-nh", "--num_creases_horizontally", type=int, default=2)
-    return parser
-
-
-# Select a random patch of block size from the given texture image
 def randomPatch(texture, block_size):
     h, w, _ = texture.shape
     # Choose a random i and j to sample block from
@@ -30,7 +16,6 @@ def randomPatch(texture, block_size):
     return texture[i : i + block_size, j : j + block_size]
 
 
-# Find the overlap difference
 def L2OverlapDiff(patch, block_size, overlap, res, y, x):
     error = 0
     if x > 0:
@@ -48,7 +33,6 @@ def L2OverlapDiff(patch, block_size, overlap, res, y, x):
     return error
 
 
-# Given overlap find the block that gives least difference
 def randomBestPatch(texture, block_size, overlap, res, y, x):
     h, w, _ = texture.shape
     errors = np.zeros((h - block_size, w - block_size))
@@ -91,7 +75,6 @@ def minCutPath(errors):
                     seen.add((curDepth, nextIndex))
 
 
-# Finding the patch with least overlap diff as the mincut patch
 def minCutPatch(patch, block_size, overlap, res, y, x):
     patch = patch.copy()
     dy, dx, _ = patch.shape
@@ -260,9 +243,9 @@ def get_creased(
         # Seed with a different selection of a wrinkle image
         # read wrinkle image as grayscale and convert to float in range 0 to 1
         wrinkle_file_name = os.path.join(
-            os.path.join("CreasesWrinkles", "wrinkles-dataset"),
+            os.path.join("src/CreasesWrinkles", "wrinkles-dataset"),
             random.choice(
-                os.listdir(os.path.join("CreasesWrinkles", "wrinkles-dataset"))
+                os.listdir(os.path.join("src/CreasesWrinkles", "wrinkles-dataset"))
             ),
         )
         wrinklesImg = quilt(wrinkle_file_name, 250, (1, 1), "Cut")
@@ -282,60 +265,7 @@ def get_creased(
         shift = mean - 0.4
         wrinkles = cv2.subtract(wrinkles, shift)
 
-    if ifCreases:
-        # draw creases as blurred lines on black background
-        # Compute coordinates of crease lines
-        coords1, coords2 = getCoords(crease_angle, num_creases_horizontally, hh, ww)
-        coords3, coords4 = getCoords(90 + crease_angle, num_creases_vertically, hh, ww)
-
-        creases = np.full((hh, ww), 1, dtype=np.float32)
-        if num_creases_horizontally != 0:
-            for i in range(len(coords1)):
-                x1 = coords1[i][0]
-                x2 = coords2[i][0]
-                y1 = coords1[i][1]
-                y2 = coords2[i][1]
-                # Drawing lines
-                if (x1 - 10) < 0:
-                    cv2.line(creases, (x1, y1), (x2, y2), 1.25, 5)
-                    cv2.line(creases, (x1, y1 - 5), (x2, y2 - 5), 1.15, 5)
-                    cv2.line(creases, (x1, y1 + 5), (x2, y2 + 5), 1.15, 5)
-                    cv2.line(creases, (x1, y1 + 10), (x2, y2 + 10), 1.05, 5)
-                    cv2.line(creases, (x1, y1 - 10), (x2, y2 - 10), 1.05, 5)
-                else:
-                    cv2.line(creases, (x1, y1), (x2, y2), 1.25, 5)
-                    cv2.line(creases, (x1 - 5, y1), (x2 - 5, y2), 1.15, 5)
-                    cv2.line(creases, (x1 + 5, y1), (x2 + 5, y2), 1.15, 5)
-                    cv2.line(creases, (x1 - 10, y1), (x2 - 10, y2), 1.05, 5)
-                    cv2.line(creases, (x1 + 10, y1), (x2 + 10, y2), 1.05, 5)
-                # Drawing lines
-        if num_creases_vertically != 0:
-            for i in range(len(coords3)):
-                x1 = coords3[i][0]
-                x2 = coords4[i][0]
-                y1 = coords3[i][1]
-                y2 = coords4[i][1]
-                if (x1 - 10) < 0:
-                    cv2.line(creases, (x1, y1), (x2, y2), 1.25, 5)
-                    cv2.line(creases, (x1, y1 - 5), (x2, y2 - 5), 1.15, 5)
-                    cv2.line(creases, (x1, y1 + 5), (x2, y2 + 5), 1.15, 5)
-                    cv2.line(creases, (x1, y1 + 10), (x2, y2 + 10), 1.05, 5)
-                    cv2.line(creases, (x1, y1 - 10), (x2, y2 - 10), 1.05, 5)
-                else:
-                    cv2.line(creases, (x1, y1), (x2, y2), 1.25, 5)
-                    cv2.line(creases, (x1 - 5, y1), (x2 - 5, y2), 1.15, 5)
-                    cv2.line(creases, (x1 + 5, y1), (x2 + 5, y2), 1.15, 5)
-                    cv2.line(creases, (x1 - 10, y1), (x2 - 10, y2), 1.05, 5)
-                    cv2.line(creases, (x1 + 10, y1), (x2 + 10, y2), 1.05, 5)
-        # Blur folds and crease array
-        folds_creases = cv2.GaussianBlur(creases, (3, 3), 0)
-        folds_creases = cv2.cvtColor(folds_creases, cv2.COLOR_GRAY2BGR)
-        # Apply folds and crease mask
-        img = img * folds_creases
-
-    # If wrinkles need to be added, add the wrinkles mask
-    if ifWrinkles:
-        transform = wrinkles
+        transform = wrinkles * 1.2 
         # threshold wrinkles and invert
         thresh = cv2.threshold(transform, 0.6, 1, cv2.THRESH_BINARY)[1]
         thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
