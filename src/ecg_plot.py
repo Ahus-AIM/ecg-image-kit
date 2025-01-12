@@ -1,5 +1,4 @@
 import os
-import json
 import numpy as np
 import random
 import matplotlib.pyplot as plt
@@ -9,7 +8,6 @@ from math import ceil
 from PIL import Image
 from io import BytesIO
 import pickle
-from PIL import Image
 
 standard_values = {
     "y_grid_size": 0.5,
@@ -161,9 +159,7 @@ def render_text_layer(fig, grid_line_width):
 
     # Step 1: Copy the figure
     fig_copy = copy_figure(fig)
-    # Step 2: Render the original figure to a numpy array
-    original_array = fig_to_array(fig_copy)
-    # Step 3: Remove everything plotted
+    # Step 2: Remove everything plotted
     removed_texts = remove_text_objects(fig_copy)
     removed_lines_315 = remove_line2d_objects_315(fig_copy)
     removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
@@ -172,7 +168,7 @@ def render_text_layer(fig, grid_line_width):
         if line.get_linewidth() == grid_line_width:
             line.set_visible(False)
 
-    # Step 4: Render figure with only specified parts
+    # Step 3: Render figure with only specified parts
     restore_objects(removed_texts)
     restore_objects(removed_lines_315)
     greyscale_text = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
@@ -187,7 +183,7 @@ def render_text_layer(fig, grid_line_width):
     greyscale_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
     removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
 
-    # Step 6: Restore the visibility of the removed objects
+    # Step 4: Restore the visibility of the removed objects
     for line in fig_copy.findobj(match=plt.Line2D):
         if line.get_linewidth() == grid_line_width:
             line.set_visible(True)
@@ -280,10 +276,12 @@ def ecg_plot(
     y_grid_size = standard_values["y_grid_size"]
     x_grid_size = standard_values["x_grid_size"]
     grid_line_width = standard_values["grid_line_width"] * random.uniform(
-        random_values["grid_line_width_min"], random_values["grid_line_width_max"]
+        random_values["grid_line_width_min"],
+        random_values["grid_line_width_max"],
     )
     lead_name_offset = standard_values["lead_name_offset"] * random.uniform(
-        random_values["lead_name_offset_min"], random_values["lead_name_offset_max"]
+        random_values["lead_name_offset_min"],
+        random_values["lead_name_offset_max"],
     )
     lead_fontsize = standard_values["lead_fontsize"] * random.uniform(
         random_values["lead_fontsize_min"], random_values["lead_fontsize_max"]
@@ -367,7 +365,9 @@ def ecg_plot(
 
         # Create dc pulse wave to plot at the beginning of plot. Dc pulse will be 0.2 seconds
         x_range = np.arange(
-            0, sample_rate * standard_values["dc_offset_length"] * step + 4 * step, step
+            0,
+            sample_rate * standard_values["dc_offset_length"] * step + 4 * step,
+            step,
         )
         dc_pulse = np.ones(len(x_range))
         dc_pulse = np.concatenate(((0, 0), dc_pulse[2:-2], (0, 0)))
@@ -383,25 +383,6 @@ def ecg_plot(
                 color=color_line,
             )
 
-            if store_text_bbox:
-                renderer1 = fig.canvas.get_renderer()
-                transf = ax.transData.inverted()
-                bb = t1.get_window_extent()
-                x1 = bb.x0 * resolution / fig.dpi
-                y1 = bb.y0 * resolution / fig.dpi
-                x2 = bb.x1 * resolution / fig.dpi
-                y2 = bb.y1 * resolution / fig.dpi
-                box_dict = dict()
-                x1 = int(x1)
-                y1 = int(y1)
-                x2 = int(x2)
-                y2 = int(y2)
-                box_dict[0] = [round(json_dict["height"] - y2, 2), round(x1, 2)]
-                box_dict[1] = [round(json_dict["height"] - y2, 2), round(x2, 2)]
-                box_dict[2] = [round(json_dict["height"] - y1, 2), round(x2, 2)]
-                box_dict[3] = [round(json_dict["height"] - y1, 2), round(x1, 2)]
-                current_lead_ds["text_bounding_box"] = box_dict
-
         current_lead_ds["lead_name"] = leadName
 
         # If we are plotting the first row-1 plots, we plot the dc pulse prior to adding the waveform
@@ -414,12 +395,6 @@ def ecg_plot(
                     linewidth=line_width * 1.5,
                     color=color_line,
                 )
-                if bbox:
-                    renderer1 = fig.canvas.get_renderer()
-                    transf = ax.transData.inverted()
-                    bb = t1[0].get_window_extent()
-                    x1, y1 = bb.x0 * resolution / fig.dpi, bb.y0 * resolution / fig.dpi
-                    x2, y2 = bb.x1 * resolution / fig.dpi, bb.y1 * resolution / fig.dpi
 
         elif i % columns == 0:
             if show_dc_pulse:
@@ -437,13 +412,6 @@ def ecg_plot(
                     linewidth=line_width * 1.5,
                     color=color_line,
                 )
-                # print(dc_pulse,y_offset)
-                if bbox:
-                    renderer1 = fig.canvas.get_renderer()
-                    transf = ax.transData.inverted()
-                    bb = t1[0].get_window_extent()
-                    x1, y1 = bb.x0 * resolution / fig.dpi, bb.y0 * resolution / fig.dpi
-                    x2, y2 = bb.x1 * resolution / fig.dpi, bb.y1 * resolution / fig.dpi
 
         t1 = ax.plot(
             np.arange(0, len(ecg[leadName]) * step, step)
@@ -459,30 +427,6 @@ def ecg_plot(
             np.arange(0, len(ecg[leadName]) * step, step) + x_offset + dc_offset + x_gap
         )
         y_vals = ecg[leadName] + y_offset
-
-        if bbox:
-            renderer1 = fig.canvas.get_renderer()
-            transf = ax.transData.inverted()
-            bb = t1[0].get_window_extent()
-            if show_dc_pulse == False or (
-                columns == 4 and (i != 0 and i != 4 and i != 8)
-            ):
-                x1, y1 = bb.x0 * resolution / fig.dpi, bb.y0 * resolution / fig.dpi
-                x2, y2 = bb.x1 * resolution / fig.dpi, bb.y1 * resolution / fig.dpi
-            else:
-                y1 = min(y1, bb.y0 * resolution / fig.dpi)
-                y2 = max(y2, bb.y1 * resolution / fig.dpi)
-                x2 = bb.x1 * resolution / fig.dpi
-            box_dict = dict()
-            x1 = int(x1)
-            y1 = int(y1)
-            x2 = int(x2)
-            y2 = int(y2)
-            box_dict[0] = [round(json_dict["height"] - y2, 2), round(x1, 2)]
-            box_dict[1] = [round(json_dict["height"] - y2, 2), round(x2, 2)]
-            box_dict[2] = [round(json_dict["height"] - y1, 2), round(x2, 2)]
-            box_dict[3] = [round(json_dict["height"] - y1, 2), round(x1, 2)]
-            current_lead_ds["lead_bounding_box"] = box_dict
 
         st = start_index
         if columns == 4 and leadName in configs["format_4_by_3"][1]:
@@ -529,8 +473,6 @@ def ecg_plot(
             )
 
             if store_text_bbox:
-                renderer1 = fig.canvas.get_renderer()
-                transf = ax.transData.inverted()
                 bb = t1.get_window_extent(renderer=fig.canvas.renderer)
                 x1 = bb.x0 * resolution / fig.dpi
                 y1 = bb.y0 * resolution / fig.dpi
@@ -541,9 +483,18 @@ def ecg_plot(
                 y1 = int(y1)
                 x2 = int(x2)
                 y2 = int(y2)
-                box_dict[0] = [round(json_dict["height"] - y2, 2), round(x1, 2)]
-                box_dict[1] = [round(json_dict["height"] - y2, 2), round(x2, 2)]
-                box_dict[2] = [round(json_dict["height"] - y1, 2), round(x2, 2)]
+                box_dict[0] = [
+                    round(json_dict["height"] - y2, 2),
+                    round(x1, 2),
+                ]
+                box_dict[1] = [
+                    round(json_dict["height"] - y2, 2),
+                    round(x2, 2),
+                ]
+                box_dict[2] = [
+                    round(json_dict["height"] - y1, 2),
+                    round(x2, 2),
+                ]
                 box_dict[3] = [round(json_dict["height"] - y1), round(x1, 2)]
                 current_lead_ds["text_bounding_box"] = box_dict
             current_lead_ds["lead_name"] = full_mode
@@ -555,15 +506,6 @@ def ecg_plot(
                 linewidth=line_width * 1.5,
                 color=color_line,
             )
-
-            # print(dc_pulse,row_height/2-lead_name_offset + 0.8)
-
-            if bbox:
-                renderer1 = fig.canvas.get_renderer()
-                transf = ax.transData.inverted()
-                bb = t1[0].get_window_extent()
-                x1, y1 = bb.x0 * resolution / fig.dpi, bb.y0 * resolution / fig.dpi
-                x2, y2 = bb.x1 * resolution / fig.dpi, bb.y1 * resolution / fig.dpi
 
         dc_full_lead_offset = 0
         if show_dc_pulse:
@@ -586,28 +528,6 @@ def ecg_plot(
         )
         y_vals = ecg["full" + full_mode] + row_height / 2 - lead_name_offset + 0.8
 
-        if bbox:
-            renderer1 = fig.canvas.get_renderer()
-            transf = ax.transData.inverted()
-            bb = t1[0].get_window_extent()
-            if show_dc_pulse == False:
-                x1, y1 = bb.x0 * resolution / fig.dpi, bb.y0 * resolution / fig.dpi
-                x2, y2 = bb.x1 * resolution / fig.dpi, bb.y1 * resolution / fig.dpi
-            else:
-                y1 = min(y1, bb.y0 * resolution / fig.dpi)
-                y2 = max(y2, bb.y1 * resolution / fig.dpi)
-                x2 = bb.x1 * resolution / fig.dpi
-
-            box_dict = dict()
-            x1 = int(x1)
-            y1 = int(y1)
-            x2 = int(x2)
-            y2 = int(y2)
-            box_dict[0] = [round(json_dict["height"] - y2, 2), round(x1, 2)]
-            box_dict[1] = [round(json_dict["height"] - y2), round(x2, 2)]
-            box_dict[2] = [round(json_dict["height"] - y1, 2), round(x2, 2)]
-            box_dict[3] = [round(json_dict["height"] - y1, 2), round(x1, 2)]
-            current_lead_ds["lead_bounding_box"] = box_dict
         current_lead_ds["start_sample"] = start_index
         current_lead_ds["end_sample"] = start_index + len(ecg["full" + full_mode])
         current_lead_ds["plotted_pixels"] = []
@@ -658,10 +578,16 @@ def ecg_plot(
 
         # set grid line style
         ax.grid(
-            which="major", linestyle="-", linewidth=grid_line_width, color=color_major
+            which="major",
+            linestyle="-",
+            linewidth=grid_line_width,
+            color=color_major,
         )
         ax.grid(
-            which="minor", linestyle="-", linewidth=grid_line_width, color=color_minor
+            which="minor",
+            linestyle="-",
+            linewidth=grid_line_width,
+            color=color_minor,
         )
 
         if store_configs == 2:

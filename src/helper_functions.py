@@ -1,11 +1,9 @@
-import os, sys, argparse, yaml, math
+import os
+import yaml
+import math
 import numpy as np
-from scipy.io import savemat, loadmat
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
-from math import ceil
 import wfdb
-from imgaug import augmenters as iaa
+from scipy.io import loadmat
 
 BIT_NAN_16 = -(2.0**15)
 
@@ -66,7 +64,7 @@ def find_records(folder, output_dir):
         f1 = f.split("/")[:-1]
         f1 = "/".join(f1)
 
-        if os.path.exists(os.path.join(output_dir, f1)) == False:
+        if not os.path.exists(os.path.join(output_dir, f1)):
             os.makedirs(os.path.join(output_dir, f1))
 
     return header_files, recording_files
@@ -186,26 +184,6 @@ def get_frequency(header):
     return frequency
 
 
-# Get analog-to-digital converter (ADC) gains from header.
-def get_adc_gains(header, leads):
-    adc_gains = np.zeros(len(leads))
-    for i, l in enumerate(header.split("\n")):
-        entries = l.split(" ")
-        if i == 0:
-            num_leads = int(entries[1])
-        elif i <= num_leads:
-            current_lead = entries[-1]
-            if current_lead in leads:
-                j = leads.index(current_lead)
-                try:
-                    adc_gains[j] = float(entries[2].split("/")[0])
-                except:
-                    pass
-        else:
-            break
-    return adc_gains
-
-
 def truncate_signal(signal, sampling_rate, length_in_secs):
     signal = signal[0 : int(sampling_rate * length_in_secs)]
     return signal
@@ -296,7 +274,14 @@ def read_leads(leads):
     if len(text_bbs) != 0:
         text_bbs = np.array(text_bbs)
 
-    return lead_bbs, text_bbs, labels, startTimeStamps, endTimeStamps, plotted_pixels
+    return (
+        lead_bbs,
+        text_bbs,
+        labels,
+        startTimeStamps,
+        endTimeStamps,
+        plotted_pixels,
+    )
 
 
 def convert_bounding_boxes_to_dict(
@@ -358,13 +343,18 @@ def convert_inches_to_seconds(inches):
 
 
 def write_wfdb_file(
-    ecg_frame, filename, rate, header_file, write_dir, full_mode, mask_unplotted_samples
+    ecg_frame,
+    filename,
+    rate,
+    header_file,
+    write_dir,
+    full_mode,
+    mask_unplotted_samples,
 ):
     full_header = load_header(header_file)
     full_leads = get_leads(full_header)
     full_leads = standardize_leads(full_leads)
 
-    lead_step = 10.0
     samples = len(ecg_frame[full_mode])
     array = np.zeros((1, samples))
 

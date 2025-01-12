@@ -1,14 +1,10 @@
 import os
 import sys
 import argparse
-import json
 import random
 import csv
 import warnings
-import numpy as np
-from PIL import Image
 from scipy.stats import bernoulli
-from helper_functions import find_files
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
 from ImageAugmentation.augment import get_augment
@@ -85,16 +81,23 @@ def get_parser():
 
 def writeCSV(args):
     csv_file_path = os.path.join(args.output_directory, "Coordinates.csv")
-    if os.path.isfile(csv_file_path) == False:
+    if not os.path.isfile(csv_file_path):
         with open(csv_file_path, "a") as ground_truth_file:
             writer = csv.writer(ground_truth_file)
             if args.start_index != -1:
                 writer.writerow(
-                    ["Filename", "class", "x_center", "y_center", "width", "height"]
+                    [
+                        "Filename",
+                        "class",
+                        "x_center",
+                        "y_center",
+                        "width",
+                        "height",
+                    ]
                 )
 
     grid_file_path = os.path.join(args.output_directory, "gridsizes.csv")
-    if os.path.isfile(grid_file_path) == False:
+    if not os.path.isfile(grid_file_path):
         with open(grid_file_path, "a") as gridsize_file:
             writer = csv.writer(gridsize_file)
             if args.start_index != -1:
@@ -104,7 +107,7 @@ def writeCSV(args):
 
 
 def run_single_file(args):
-    if hasattr(args, "st") == True:
+    if hasattr(args, "st"):
         random.seed(args.seed)
         args.encoding = args.input_file
 
@@ -135,7 +138,7 @@ def run_single_file(args):
     font = os.path.join("Fonts", random.choice(os.listdir("Fonts")))
 
     if args.random_bw == 0:
-        if args.random_grid_color == False:
+        if not args.random_grid_color:
             standard_colours = args.standard_grid_color
         else:
             standard_colours = -1
@@ -232,7 +235,6 @@ def run_single_file(args):
                 temp = random.choice(range(2000, 4000))
             else:
                 temp = random.choice(range(10000, 20000))
-            rotate = args.rotate
             out = get_augment(
                 out,
                 output_directory=args.output_directory,
@@ -244,12 +246,6 @@ def run_single_file(args):
                 store_text_bounding_box=args.lead_name_bbox,
                 json_dict={},
             )
-
-        else:
-            crop = 0
-            temp = 0
-            rotate = 0
-            noise = 0
 
     return len(out_array)
 

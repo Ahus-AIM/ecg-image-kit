@@ -4,7 +4,6 @@ import os
 import json
 import numpy as np
 from helper_functions import (
-    get_adc_gains,
     get_frequency,
     get_leads,
     load_recording,
@@ -55,9 +54,6 @@ def get_paper_ecg(
     # Update the header file
     full_lines = full_header.split("\n")
 
-    # For the first line, update the number of leads.
-    entries = full_lines[0].split()
-
     head, tail = os.path.split(full_header_file)
 
     output_header_file = os.path.join(output_directory, tail)
@@ -69,18 +65,15 @@ def get_paper_ecg(
 
     # Get values from header
     rate = get_frequency(full_header)
-    adc = get_adc_gains(full_header, full_leads)
 
     full_leads = standardize_leads(full_leads)
 
     if len(full_leads) == 2:
         full_mode = "None"
-        gen_m = 2
         if columns == -1:
             columns = 1
 
     elif len(full_leads) == 12:
-        gen_m = 12
         if full_mode not in full_leads:
             full_mode = full_leads[0]
         else:
@@ -88,11 +81,8 @@ def get_paper_ecg(
         if columns == -1:
             columns = 4
     else:
-        gen_m = len(full_leads)
         columns = 4
         full_mode = "None"
-
-    template_name = "custom_template.png"
 
     if recording.shape[0] != num_full_leads:
         recording = np.transpose(recording)
@@ -222,7 +212,7 @@ def get_paper_ecg(
         ecg_frame.append(frame)
 
     else:
-        while end_flag == False:
+        while not end_flag:
             # To do : Incorporate column and ful_mode info
             frame = {}
             gain_index = 0
@@ -335,7 +325,7 @@ def get_paper_ecg(
                                     + frame["full" + full_mode].tolist()
                                 )
                     gain_index += 1
-            if end_flag == False:
+            if not end_flag:
                 ecg_frame.append(frame)
                 start = start + int(rate * abs_lead_step)
     outfile_array = []
