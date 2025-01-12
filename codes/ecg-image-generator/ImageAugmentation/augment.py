@@ -1,26 +1,17 @@
-import imageio, json
-from PIL import Image
+import numpy as np
+import os
 import argparse
-import imgaug as ia
+import random
+import matplotlib.pyplot as plt
+
+from PIL import Image
 from imgaug import augmenters as iaa
-from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from helper_functions import (
     read_leads,
     convert_bounding_boxes_to_dict,
     rotate_bounding_box,
-    get_lead_pixel_coordinate,
     rotate_points,
 )
-import numpy as np
-import matplotlib.pyplot as plt
-import os, sys, argparse
-import numpy as np
-from scipy.io import savemat, loadmat
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
-from math import ceil
-import time
-import random
 
 
 def get_parser():
@@ -64,10 +55,6 @@ def get_augment(
         plotted_pixels,
     ) = read_leads(json_dict["leads"])
 
-    if bbox:
-        lead_bbs = BoundingBoxesOnImage(lead_bbs, shape=image.shape)
-    if store_text_bounding_box:
-        leadNames_bbs = BoundingBoxesOnImage(leadNames_bbs, shape=image.shape)
 
     images = [image[:, :, :3]]
     h, w, _ = image.shape
