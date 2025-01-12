@@ -7,7 +7,6 @@ import warnings
 from scipy.stats import bernoulli
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
-from ImageAugmentation.augment import get_augment
 from helper_functions import read_config_file
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -19,131 +18,32 @@ def get_parser():
     parser.add_argument("-i", "--input_file", type=str, required=True)
     parser.add_argument("-hea", "--header_file", type=str, required=True)
     parser.add_argument("-o", "--output_directory", type=str, required=True)
-    parser.add_argument("-se", "--seed", type=int, required=False, default=-1)
-    parser.add_argument("-st", "--start_index", type=int, required=True, default=-1)
-    parser.add_argument("--num_leads", type=str, default="twelve")
     parser.add_argument("--config_file", type=str, default="config.yaml")
-
-    parser.add_argument("-r", "--resolution", type=int, required=False, default=200)
-    parser.add_argument("--pad_inches", type=int, required=False, default=0)
-    parser.add_argument("-ph", "--print_header", action="store_true", default=False)
-    parser.add_argument("--num_columns", type=int, default=-1)
-    parser.add_argument("--full_mode", type=str, default="II")
-    parser.add_argument("--mask_unplotted_samples", action="store_true", default=False)
-
-    parser.add_argument("-l", "--link", type=str, required=False, default="")
-    parser.add_argument("-n", "--num_words", type=int, required=False, default=5)
-    parser.add_argument("--x_offset", dest="x_offset", type=int, default=30)
-    parser.add_argument("--y_offset", dest="y_offset", type=int, default=30)
-
-    parser.add_argument("-ca", "--crease_angle", type=int, default=90)
-    parser.add_argument("-nv", "--num_creases_vertically", type=int, default=10)
-    parser.add_argument("-nh", "--num_creases_horizontally", type=int, default=10)
-
-    parser.add_argument("-rot", "--rotate", type=int, default=0)
-    parser.add_argument("-noise", "--noise", type=int, default=50)
-    parser.add_argument("-c", "--crop", type=float, default=0.01)
-    parser.add_argument("-t", "--temperature", type=int, default=40000)
-
-    parser.add_argument("--random_resolution", action="store_true", default=False)
-    parser.add_argument("--random_padding", action="store_true", default=False)
-    parser.add_argument("--random_grid_color", action="store_true", default=False)
-    parser.add_argument("--standard_grid_color", type=int, default=5)
-    parser.add_argument("--calibration_pulse", type=float, default=1)
-    parser.add_argument("--random_grid_present", type=float, default=1)
-    parser.add_argument("--random_print_header", type=float, default=0)
-    parser.add_argument("--random_bw", type=float, default=0)
-    parser.add_argument("--remove_lead_names", action="store_false", default=True)
-    parser.add_argument("--lead_name_bbox", action="store_true", default=False)
-    parser.add_argument("--store_config", type=int, nargs="?", const=1, default=0)
-
-    parser.add_argument("--deterministic_offset", action="store_true", default=False)
-    parser.add_argument("--deterministic_num_words", action="store_true", default=False)
-
-    parser.add_argument("--deterministic_angle", action="store_true", default=False)
-    parser.add_argument("--deterministic_vertical", action="store_true", default=False)
-    parser.add_argument(
-        "--deterministic_horizontal", action="store_true", default=False
-    )
-
-    parser.add_argument("--deterministic_rot", action="store_true", default=False)
-    parser.add_argument("--deterministic_noise", action="store_true", default=False)
-    parser.add_argument("--deterministic_crop", action="store_true", default=False)
-    parser.add_argument("--deterministic_temp", action="store_true", default=False)
-
-    parser.add_argument("--fully_random", action="store_true", default=False)
     parser.add_argument("--wrinkles", action="store_true", default=False)
-    parser.add_argument("--augment", action="store_true", default=False)
-    parser.add_argument("--lead_bbox", action="store_true", default=False)
 
     return parser
 
 
-def writeCSV(args):
-    csv_file_path = os.path.join(args.output_directory, "Coordinates.csv")
-    if not os.path.isfile(csv_file_path):
-        with open(csv_file_path, "a") as ground_truth_file:
-            writer = csv.writer(ground_truth_file)
-            if args.start_index != -1:
-                writer.writerow(
-                    [
-                        "Filename",
-                        "class",
-                        "x_center",
-                        "y_center",
-                        "width",
-                        "height",
-                    ]
-                )
-
-    grid_file_path = os.path.join(args.output_directory, "gridsizes.csv")
-    if not os.path.isfile(grid_file_path):
-        with open(grid_file_path, "a") as gridsize_file:
-            writer = csv.writer(gridsize_file)
-            if args.start_index != -1:
-                writer.writerow(
-                    ["filename", "xgrid", "ygrid", "lead_name", "start", "end"]
-                )
-
 
 def run_single_file(args):
-    if hasattr(args, "st"):
-        random.seed(args.seed)
-        args.encoding = args.input_file
+    args.encoding = args.input_file
 
     filename = args.input_file
     header = args.header_file
-    resolution = (
-        random.choice(range(50, args.resolution + 1))
-        if (args.random_resolution)
-        else args.resolution
-    )
-    padding = (
-        random.choice(range(0, args.pad_inches + 1))
-        if (args.random_padding)
-        else args.pad_inches
-    )
+    resolution = 200
+    padding=0
 
     papersize = ""
-    lead = args.remove_lead_names
+    lead = True
 
-    bernoulli_dc = bernoulli(args.calibration_pulse)
-    bernoulli_bw = bernoulli(args.random_bw)
-    bernoulli_grid = bernoulli(args.random_grid_present)
-    if args.print_header:
-        bernoulli_add_print = bernoulli(1)
-    else:
-        bernoulli_add_print = bernoulli(args.random_print_header)
+    bernoulli_dc = bernoulli(0.5)
+    bernoulli_bw = bernoulli(0)
+    bernoulli_grid = bernoulli(1)
+    bernoulli_add_print = bernoulli(0)
 
     font = os.path.join("Fonts", random.choice(os.listdir("Fonts")))
 
-    if args.random_bw == 0:
-        if not args.random_grid_color:
-            standard_colours = args.standard_grid_color
-        else:
-            standard_colours = -1
-    else:
-        standard_colours = False
+    standard_colours = False
 
     configs = read_config_file(os.path.join(os.getcwd(), args.config_file))
 
@@ -151,10 +51,10 @@ def run_single_file(args):
         input_file=filename,
         header_file=header,
         configs=configs,
-        mask_unplotted_samples=args.mask_unplotted_samples,
-        start_index=args.start_index,
-        store_configs=args.store_config,
-        store_text_bbox=args.lead_name_bbox,
+        mask_unplotted_samples=False,
+        start_index=-1,
+        store_configs=0,
+        store_text_bbox=False,
         output_directory=args.output_directory,
         resolution=resolution,
         papersize=papersize,
@@ -163,42 +63,25 @@ def run_single_file(args):
         add_bw=bernoulli_bw,
         show_grid=bernoulli_grid,
         add_print=bernoulli_add_print,
-        pad_inches=padding,
+        pad_inches=0,
         font_type=font,
         standard_colours=standard_colours,
-        full_mode=args.full_mode,
-        bbox=args.lead_bbox,
-        columns=args.num_columns,
-        seed=args.seed,
+        full_mode='II',
+        bbox=False,
+        columns=-1,
+        seed=42,
     )
 
     for out in out_array:
         rec_tail, extn = os.path.splitext(out)
-        if args.fully_random:
-            wrinkles = random.choice((True, False))
-            augment = random.choice((True, False))
-        else:
-            wrinkles = args.wrinkles
-            augment = args.augment
+        wrinkles = args.wrinkles
 
         if wrinkles:
             ifWrinkles = True
             ifCreases = True
-            crease_angle = (
-                args.crease_angle
-                if (args.deterministic_angle)
-                else random.choice(range(0, args.crease_angle + 1))
-            )
-            num_creases_vertically = (
-                args.num_creases_vertically
-                if (args.deterministic_vertical)
-                else random.choice(range(1, args.num_creases_vertically + 1))
-            )
-            num_creases_horizontally = (
-                args.num_creases_horizontally
-                if (args.deterministic_horizontal)
-                else random.choice(range(1, args.num_creases_horizontally + 1))
-            )
+            crease_angle = random.choice(range(0, 90))
+            num_creases_vertically = random.choice(range(1, 5))
+            num_creases_horizontally = random.choice(range(1, 5))
             out = get_creased(
                 out,
                 output_directory=args.output_directory,
@@ -207,45 +90,12 @@ def run_single_file(args):
                 crease_angle=crease_angle,
                 num_creases_vertically=num_creases_vertically,
                 num_creases_horizontally=num_creases_horizontally,
-                bbox=args.lead_bbox,
+                bbox=False,
             )
         else:
             crease_angle = 0
             num_creases_horizontally = 0
             num_creases_vertically = 0
-
-        if augment:
-            noise = (
-                args.noise
-                if (args.deterministic_noise)
-                else random.choice(range(1, args.noise + 1))
-            )
-
-            if not args.lead_bbox:
-                do_crop = random.choice((True, False))
-                if do_crop:
-                    crop = args.crop
-                else:
-                    crop = args.crop
-            else:
-                crop = 0
-            blue_temp = random.choice((True, False))
-
-            if blue_temp:
-                temp = random.choice(range(2000, 4000))
-            else:
-                temp = random.choice(range(10000, 20000))
-            out = get_augment(
-                out,
-                output_directory=args.output_directory,
-                rotate=args.rotate,
-                noise=noise,
-                crop=crop,
-                temperature=temp,
-                bbox=args.lead_bbox,
-                store_text_bounding_box=args.lead_name_bbox,
-                json_dict={},
-            )
 
     return len(out_array)
 
