@@ -29,28 +29,6 @@ standard_values = {
     "height": 8.5,
 }
 
-# random_values = {
-#     "line_width_min": 0.5,
-#     "line_width_max": 1.5,
-#     "grid_line_width_min": 0.9,
-#     "grid_line_width_max": 1.5,
-#     "lead_fontsize_min": 0.7,
-#     "lead_fontsize_max": 2.0,
-#     "lead_name_offset_min": -1.0,
-#     "lead_name_offset_max": 2.0,
-#     "major_red_min": 0.4,
-#     "major_red_max": 1.0,
-#     "major_green_min": 0.2,
-#     "major_green_max": 0.7,
-#     "major_blue_min": 0.2,
-#     "major_blue_max": 0.7,
-#     "minor_offset_min": 0.0,
-#     "minor_offset_max": 0.3,
-#     "grey_min": 0.0,
-#     "grey_max": 0.5,
-# }
-
-
 def get_major_colors(random_values):
     major_random_color_sampler_red = random.uniform(
         random_values["major_red_min"], random_values["major_red_max"]
@@ -201,7 +179,7 @@ def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
     mask[:, :, 2] = signal_map.astype(np.uint8)
     mask[:, :, 1] = np.max([text_map, control_signal_map], axis=0).astype(np.uint8)
     mask[:, :, 1][mask[:, :, 2] > 0] = 0
-    mask_file = os.path.join(output_dir, tail + "_mask.png")
+    mask_file = os.path.join(output_dir, tail[:5] + "_mask" + tail[5:] + ".png")
     Image.fromarray(mask).save(mask_file)
 
 
