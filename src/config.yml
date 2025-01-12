@@ -1,0 +1,35 @@
+input_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
+header_directory: "/data/physionet.org/files/ptb-xl/1.0.3/records100/"
+output_directory: "./generated_images/"
+
+# Start and End Indices (ECG records)
+start_index: 1
+end_index: 5
+
+wrinkles: true
+resolution: 200
+padding: 0
+papersize: ""
+lead: true
+bernoulli_dc: 0.5
+bernoulli_bw: 0
+bernoulli_grid: 1
+bernoulli_add_print: 0
+standard_colours: false
+mask_unplotted_samples: false
+store_configs: 0
+store_text_bbox: false
+full_mode: "II"
+bbox: false
+columns: -1
+seed: 42
+paper_len: 10.0
+abs_lead_step: 10
+format_4_by_3: [["I", "II", "III"], ["aVR", "aVL", "aVF", "AVR", "AVL", "AVF"], ["V1", "V2", "V3"], ["V4", "V5", "V6"]]
+leadNames_12: ["III", 'aVF', 'V3', 'V6', 'II', 'aVL', 'V2', 'V5', 'I', 'aVR', 'V1', 'V4']
+tickLength: 8 
+tickSize_step: 0.002 
+
+# Wrinkle configurations
+wrinkles_config:
+  ifWrinkles: true
