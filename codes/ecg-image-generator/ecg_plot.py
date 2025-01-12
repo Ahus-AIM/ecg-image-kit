@@ -609,6 +609,8 @@ def ecg_plot(
     # change x and y res
     ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
     ax.text(4, 0.5, "10mm/mV", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
+    lipsum_str = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, \nwhen an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. \nIt was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+    ax.text(0, 19.5, lipsum_str, fontsize=lead_fontsize*0.7, fontproperties=custom_font, color=color_line)
 
     if show_grid:
         ax.set_xticks(np.arange(x_min, x_max, x_grid_size))
