@@ -1,6 +1,5 @@
 import os
 import yaml
-import math
 import numpy as np
 import wfdb
 from scipy.io import loadmat
@@ -27,123 +26,14 @@ def read_config_file(config_file):
     return args
 
 
-def find_records(folder, output_dir):
-    header_files = list()
-    recording_files = list()
-
-    for root, directories, files in os.walk(folder):
-        files = sorted(files)
-        for file in files:
-            extension = os.path.splitext(file)[1]
-            if extension == ".mat":
-                record = os.path.relpath(
-                    os.path.join(root, file.split(".")[0] + ".mat"), folder
-                )
-                hd = os.path.relpath(
-                    os.path.join(root, file.split(".")[0] + ".hea"), folder
-                )
-                recording_files.append(record)
-                header_files.append(hd)
-            if extension == ".dat":
-                record = os.path.relpath(
-                    os.path.join(root, file.split(".")[0] + ".dat"), folder
-                )
-                hd = os.path.relpath(
-                    os.path.join(root, file.split(".")[0] + ".hea"), folder
-                )
-                header_files.append(hd)
-                recording_files.append(record)
-
-    if recording_files == []:
-        raise Exception(
-            "The input directory does not have any WFDB compatible ECG files, please re-check the folder!"
-        )
-
-    for file in recording_files:
-        f, ext = os.path.splitext(file)
-        f1 = f.split("/")[:-1]
-        f1 = "/".join(f1)
-
-        if not os.path.exists(os.path.join(output_dir, f1)):
-            os.makedirs(os.path.join(output_dir, f1))
-
-    return header_files, recording_files
-
-
-def find_files(data_directory):
-    header_files = list()
-    recording_files = list()
-
-    for f in sorted(os.listdir(data_directory)):
-
-        if os.path.isdir(os.path.join(data_directory, f)):
-
-            for file in sorted(os.listdir(os.path.join(data_directory, f))):
-                root, extension = os.path.splitext(file)
-
-                if not root.startswith("."):
-
-                    if extension == ".mat":
-                        header_file = os.path.join(
-                            os.path.join(data_directory, f), root + ".hea"
-                        )
-                        recording_file = os.path.join(
-                            os.path.join(data_directory, f), root + ".mat"
-                        )
-
-                        if os.path.isfile(header_file) and os.path.isfile(
-                            recording_file
-                        ):
-                            header_files.append(header_file)
-                            recording_files.append(recording_file)
-
-                    if extension == ".dat":
-                        header_file = os.path.join(
-                            os.path.join(data_directory, f), root + ".hea"
-                        )
-                        recording_file = os.path.join(
-                            os.path.join(data_directory, f), root + ".dat"
-                        )
-
-                        if os.path.isfile(header_file) and os.path.isfile(
-                            recording_file
-                        ):
-                            header_files.append(header_file)
-                            recording_files.append(recording_file)
-
-        else:
-
-            root, extension = os.path.splitext(f)
-
-            if not root.startswith("."):
-                # Based on the recording format, we save the file names differently
-                if extension == ".mat":
-                    header_file = os.path.join(data_directory, root + ".hea")
-                    recording_file = os.path.join(data_directory, root + ".mat")
-                    if os.path.isfile(header_file) and os.path.isfile(recording_file):
-                        header_files.append(header_file)
-                        recording_files.append(recording_file)
-
-                if extension == ".dat":
-                    header_file = os.path.join(data_directory, root + ".hea")
-                    recording_file = os.path.join(data_directory, root + ".dat")
-                    if os.path.isfile(header_file) and os.path.isfile(recording_file):
-                        header_files.append(header_file)
-                        recording_files.append(recording_file)
-
-    return header_files, recording_files
-
-
 def load_header(header_file):
     with open(header_file, "r") as f:
         header = f.read()
     return header
 
 
-# Load recording file as an array.
 def load_recording(recording_file, header=None, key="val"):
     rootname, extension = os.path.splitext(recording_file)
-    # Load files differently based on file format
     if extension == ".dat":
         recording = wfdb.rdrecord(rootname)
         return recording.p_signal
@@ -152,7 +42,6 @@ def load_recording(recording_file, header=None, key="val"):
     return recording
 
 
-# Get leads from header.
 def get_leads(header):
     leads = list()
     for i, l in enumerate(header.split("\n")):
@@ -166,7 +55,6 @@ def get_leads(header):
     return tuple(leads)
 
 
-# Get frequency from header.
 def get_frequency(header):
     frequency = None
     for i, l in enumerate(header.split("\n")):
@@ -182,11 +70,6 @@ def get_frequency(header):
         else:
             break
     return frequency
-
-
-def truncate_signal(signal, sampling_rate, length_in_secs):
-    signal = signal[0 : int(sampling_rate * length_in_secs)]
-    return signal
 
 
 def create_signal_dictionary(signal, full_leads):
@@ -211,26 +94,6 @@ def standardize_leads(full_leads):
             else:
                 full_leads_array[i] = "aVF"
     return full_leads_array
-
-
-def rotate_bounding_box(box, origin, angle):
-    angle = math.radians(angle)
-
-    transformation = np.ones((2, 2))
-    transformation[0][0] = math.cos(angle)
-    transformation[0][1] = math.sin(angle)
-    transformation[1][0] = -math.sin(angle)
-    transformation[1][1] = math.cos(angle)
-
-    new_origin = np.ones((1, 2))
-    new_origin[0, 0] = -origin[0] * math.cos(angle) + origin[1] * math.sin(angle)
-    new_origin[0, 1] = -origin[0] * math.sin(angle) - origin[1] * math.cos(angle)
-    origin = np.reshape(origin, (1, 2))
-
-    transformed_box = np.matmul(box, transformation)
-    transformed_box += origin + new_origin
-
-    return transformed_box
 
 
 def read_leads(leads):
@@ -284,64 +147,6 @@ def read_leads(leads):
     )
 
 
-def convert_bounding_boxes_to_dict(
-    lead_bboxes,
-    text_bboxes,
-    labels,
-    startTimeList=None,
-    endTimeList=None,
-    plotted_pixels_dict=None,
-):
-    leads_ds = []
-
-    for i in range(len(labels)):
-        current_lead_ds = dict()
-        if len(lead_bboxes) != 0:
-            new_box = dict()
-            box = lead_bboxes[i]
-            new_box[0] = [round(box[0][0]), round(box[0][1])]
-            new_box[1] = [round(box[1][0]), round(box[1][1])]
-            new_box[2] = [round(box[2][0]), round(box[2][1])]
-            new_box[3] = [round(box[3][0]), round(box[3][1])]
-            current_lead_ds["lead_bounding_box"] = new_box
-
-        if len(text_bboxes) != 0:
-            new_box = dict()
-            box = text_bboxes[i]
-            new_box[0] = [round(box[0][0]), round(box[0][1])]
-            new_box[1] = [round(box[1][0]), round(box[1][1])]
-            new_box[2] = [round(box[2][0]), round(box[2][1])]
-            new_box[3] = [round(box[3][0]), round(box[3][1])]
-            current_lead_ds["text_bounding_box"] = new_box
-
-        current_lead_ds["lead_name"] = labels[i]
-        current_lead_ds["start_sample"] = startTimeList[i]
-        current_lead_ds["end_sample"] = endTimeList[i]
-        current_lead_ds["plotted_pixels"] = [
-            [plotted_pixels_dict[i][j][0], plotted_pixels_dict[i][j][1]]
-            for j in range(len(plotted_pixels_dict[i]))
-        ]
-        leads_ds.append(current_lead_ds)
-
-    return leads_ds
-
-
-def convert_mm_to_volts(mm):
-    return float(mm / 10)
-
-
-def convert_mm_to_seconds(mm):
-    return float(mm * 0.04)
-
-
-def convert_inches_to_volts(inches):
-    return float(inches * 2.54)
-
-
-def convert_inches_to_seconds(inches):
-    return float(inches * 1.016)
-
-
 def write_wfdb_file(
     ecg_frame,
     filename,
@@ -391,39 +196,3 @@ def write_wfdb_file(
         write_dir=write_dir,
         comments=header.comments,
     )
-
-
-def get_lead_pixel_coordinate(leads):
-
-    pixel_coordinates = dict()
-
-    for i in range(len(leads)):
-        leadName = leads[i]["lead_name"]
-        plotted_pixels = np.array(leads[i]["plotted_pixels"])
-        pixel_coordinates[leadName] = plotted_pixels
-
-    return pixel_coordinates
-
-
-def rotate_points(pixel_coordinates, origin, angle):
-    rotates_pixel_coords = []
-    angle = math.radians(angle)
-    transformation = np.ones((2, 2))
-    transformation[0][0] = math.cos(angle)
-    transformation[0][1] = math.sin(angle)
-    transformation[1][0] = -math.sin(angle)
-    transformation[1][1] = math.cos(angle)
-
-    new_origin = np.ones((1, 2))
-
-    new_origin[0, 0] = -origin[0] * math.cos(angle) + origin[1] * math.sin(angle)
-    new_origin[0, 1] = -origin[0] * math.sin(angle) - origin[1] * math.cos(angle)
-    origin = np.reshape(origin, (1, 2))
-
-    for i in range(len(pixel_coordinates)):
-        pixels_array = pixel_coordinates[i]
-        transformed_matrix = np.matmul(pixels_array, transformation)
-        transformed_matrix += origin + new_origin
-        rotates_pixel_coords.append(np.round(transformed_matrix, 2))
-
-    return rotates_pixel_coords

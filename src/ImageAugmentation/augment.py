@@ -6,12 +6,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from imgaug import augmenters as iaa
-from helper_functions import (
-    read_leads,
-    convert_bounding_boxes_to_dict,
-    rotate_bounding_box,
-    rotate_points,
-)
+from helper_functions import read_leads
 
 
 def get_parser():
@@ -19,9 +14,7 @@ def get_parser():
     parser.add_argument("-s", "--source_directory", type=str, required=True)
     parser.add_argument("-i", "--input_file", type=str, required=True)
     parser.add_argument("-o", "--output_directory", type=str, required=True)
-    parser.add_argument("-r", "--rotate", type=int, default=25)
     parser.add_argument("-n", "--noise", type=int, default=25)
-    parser.add_argument("-c", "--crop", type=float, default=0.01)
     parser.add_argument("-t", "--temperature", type=int, default=6500)
     return parser
 
@@ -70,29 +63,6 @@ def get_augment(
     )
 
     images_aug = seq(images=images)
-
-    if bbox:
-        augmented_lead_bbs = rotate_bounding_box(lead_bbs, [h / 2, w / 2], -rot)
-    else:
-        augmented_lead_bbs = []
-    if store_text_bounding_box:
-        augmented_leadName_bbs = rotate_bounding_box(
-            leadNames_bbs, [h / 2, w / 2], -rot
-        )
-    else:
-        augmented_leadName_bbs = []
-
-    rotated_pixel_coordinates = rotate_points(plotted_pixels, [h / 2, w / 2], -rot)
-
-    if bbox or store_text_bounding_box:
-        json_dict["leads"] = convert_bounding_boxes_to_dict(
-            augmented_lead_bbs,
-            augmented_leadName_bbs,
-            lead_bbs_labels,
-            startTime_bbs,
-            endTime_bbs,
-            rotated_pixel_coordinates,
-        )
 
     head, tail = os.path.split(filename)
 
