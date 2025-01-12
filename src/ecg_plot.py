@@ -259,7 +259,7 @@ def ecg_plot(
 
     matplotlib.use("Agg")
 
-    fonts_folder = "Fonts"
+    fonts_folder = "src/Fonts"
     font_files = [f for f in os.listdir(fonts_folder) if f.endswith(".ttf")]
     random_font = random.choice(font_files)
     font_path = os.path.join(os.getcwd(), fonts_folder, random_font)
