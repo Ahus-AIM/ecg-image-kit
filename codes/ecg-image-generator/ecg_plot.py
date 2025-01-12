@@ -31,6 +31,173 @@ standard_values = {
     "height": 8.5,
 }
 
+random_values = {
+    "line_width_min": 0.5,
+    "line_width_max": 1.5,
+    "grid_line_width_min": 0.9,
+    "grid_line_width_max": 1.5,
+    "lead_fontsize_min": 0.7,
+    "lead_fontsize_max": 2.0,
+    "lead_name_offset_min": -1.0,
+    "lead_name_offset_max": 2.0,
+    "major_red_min": 0.1,
+    "major_red_max": 1.0,
+    "major_green_min": 0.0,
+    "major_green_max": 0.5,
+    "major_blue_min": 0.0,
+    "major_blue_max": 0.5,
+    "minor_offset_min": 0.0,
+    "minor_offset_max": 0.5,
+    "grey_min": 0.0,
+    "grey_max": 0.3,
+}
+
+def get_major_colors(random_values):
+    major_random_color_sampler_red = random.uniform(
+        random_values["major_red_min"], random_values["major_red_max"]
+    )
+    major_random_color_sampler_green = random.uniform(
+        random_values["major_green_min"], random_values["major_green_max"]
+    )
+    major_random_color_sampler_blue = random.uniform(
+        random_values["major_blue_min"], random_values["major_blue_max"]
+    )
+    return (
+        major_random_color_sampler_red,
+        major_random_color_sampler_green,
+        major_random_color_sampler_blue,
+    )
+
+def get_minor_colors(random_values, major_colors):
+    minor_offset = random.uniform(
+        random_values["minor_offset_min"], random_values["minor_offset_max"]
+    )
+    minor_random_color_sampler_red = major_colors[0] + minor_offset
+    minor_random_color_sampler_green = major_colors[1] + minor_offset
+    minor_random_color_sampler_blue = major_colors[2] + minor_offset
+    minor_random_color_sampler_red = min(1.0, minor_random_color_sampler_red)
+    minor_random_color_sampler_green = min(1.0, minor_random_color_sampler_green)
+    minor_random_color_sampler_blue = min(1.0, minor_random_color_sampler_blue)
+
+    return (
+        minor_random_color_sampler_red,
+        minor_random_color_sampler_green,
+        minor_random_color_sampler_blue,
+    )
+
+def get_signal_color(random_values):
+    grey_random_color = random.uniform(
+        random_values["grey_min"], random_values["grey_max"]
+    )
+    return (grey_random_color, grey_random_color, grey_random_color)
+
+def copy_figure(fig):
+    """Copy a Matplotlib figure."""
+    buf = BytesIO()
+    pickle.dump(fig, buf)
+    buf.seek(0)
+    return pickle.load(buf)
+
+def fig_to_array(fig):
+    """Convert a Matplotlib figure to a numpy array."""
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    img = Image.open(buf)
+    return np.array(img)
+
+def remove_text_objects(fig):
+    """Remove text objects from a Matplotlib figure."""
+    text_objects = fig.findobj(match=plt.Text)
+    for text_obj in text_objects:
+        text_obj.set_visible(False)
+    return text_objects
+
+def remove_line2d_objects_315(fig):
+    """Remove Line2D objects of length 315 from a Matplotlib figure."""
+    line2d_objects = []
+    for line in fig.findobj(match=plt.Line2D):
+        if len(line.get_xydata()) == 315:
+            line.set_visible(False)
+            line2d_objects.append(line)
+    return line2d_objects
+
+def remove_line2d_objects_250_1000(fig):
+    """Remove Line2D objects of length 315 from a Matplotlib figure."""
+    line2d_objects = []
+    for line in fig.findobj(match=plt.Line2D):
+        if len(line.get_xydata()) in (250, 1000):
+            line.set_visible(False)
+            line2d_objects.append(line)
+    return line2d_objects
+
+def remove_line2d_objects_24(fig):
+    """Remove Line2D objects of length 315 from a Matplotlib figure."""
+    line2d_objects = []
+    for line in fig.findobj(match=plt.Line2D):
+        if len(line.get_xydata()) == 24:
+            line.set_visible(False)
+            line2d_objects.append(line)
+    return line2d_objects
+
+def restore_objects(objects):
+    """Restore visibility of given objects in a Matplotlib figure."""
+    for obj in objects:
+        obj.set_visible(True)
+
+def render_text_layer(fig, grid_line_width):
+    """Render only the text from a Matplotlib figure on a blank canvas."""
+
+    # Step 1: Copy the figure
+    fig_copy = copy_figure(fig)
+    # Step 2: Render the original figure to a numpy array
+    original_array = fig_to_array(fig_copy)
+    # Step 3: Remove everything plotted
+    removed_texts = remove_text_objects(fig_copy)
+    removed_lines_315 = remove_line2d_objects_315(fig_copy)
+    removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
+    removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
+    for line in fig_copy.findobj(match=plt.Line2D):
+        if line.get_linewidth() == grid_line_width:
+            line.set_visible(False)
+
+    # Step 4: Render figure with only specified parts
+    restore_objects(removed_texts)
+    restore_objects(removed_lines_315)
+    greyscale_text = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
+    removed_texts = remove_text_objects(fig_copy)
+    removed_lines_315 = remove_line2d_objects_315(fig_copy)
+
+    restore_objects(removed_control_signal_lines)
+    greyscale_control_signal = 255 - np.max(
+        fig_to_array(fig_copy)[..., :3], axis=-1
+    )
+    removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
+
+    restore_objects(removed_signal_lines)
+    greyscale_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
+    removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
+
+    # Step 6: Restore the visibility of the removed objects
+    for line in fig_copy.findobj(match=plt.Line2D):
+        if line.get_linewidth() == grid_line_width:
+            line.set_visible(True)
+    restore_objects(removed_texts)
+    restore_objects(removed_lines_315)
+    restore_objects(removed_control_signal_lines)
+    restore_objects(removed_signal_lines)
+
+    return greyscale_signal, greyscale_control_signal, greyscale_text
+
+def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
+    signal_map, control_signal_map, text_map = render_text_layer(fig, grid_line_width)
+    mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
+    mask[:, :, 2] = signal_map.astype(np.uint8)
+    mask[:, :, 1] = np.max([text_map, control_signal_map], axis=0).astype(np.uint8)
+    mask[:, :, 1][mask[:, :, 2] > 0] = 0
+    mask_file = os.path.join(output_dir, tail + "_mask.png")
+    Image.fromarray(mask).save(mask_file)
+
 # Function to plot raw ecg signal
 def ecg_plot(
     ecg,
@@ -66,6 +233,7 @@ def ecg_plot(
     start_index=-1,
     store_configs=0,
     lead_length_in_seconds=10,
+    random_values=random_values,
 ):
     # Inputs :
     # ecg - Dictionary of ecg signal with lead names as keys
@@ -82,39 +250,22 @@ def ecg_plot(
     # show_dc_pulse - Option to show dc pulse
     # show_grid - Turn grid on or off
 
-    # Initialize some params
-    # secs represents how many seconds of ecg are plotted
-    # leads represent number of leads in the ecg
-    # rows are calculated based on corresponding number of leads and number of columns
     matplotlib.use("Agg")
 
-    # check if the ecg dict is empty
-    if ecg == {}:
-        return
-
     secs = lead_length_in_seconds
-
     leads = len(lead_index)
-
     rows = int(ceil(leads / columns))
 
-    if full_mode != "None":
-        rows += 1
-        leads += 1
 
     # Grid calibration
     # Each big grid corresponds to 0.2 seconds and 0.5 mV
     # To do: Select grid size in a better way
-    random_line_width = random.uniform(0.5, 1.5)
-    random_grid_line_width = random.uniform(0.9, 1.5)
-    random_lead_fontsize = random.uniform(0.7, 2.0)
-    random_lead_name_offset = random.uniform(-1.0, 2.0)
     y_grid_size = standard_values["y_grid_size"]
     x_grid_size = standard_values["x_grid_size"]
-    grid_line_width = standard_values["grid_line_width"] * random_grid_line_width
-    lead_name_offset = standard_values["lead_name_offset"] * random_lead_name_offset
-    lead_fontsize = standard_values["lead_fontsize"] * random_lead_fontsize
-    line_width = standard_values["line_width"] * random_line_width
+    grid_line_width = standard_values["grid_line_width"] * random.uniform(random_values["grid_line_width_min"], random_values["grid_line_width_max"])
+    lead_name_offset = standard_values["lead_name_offset"] * random.uniform(random_values["lead_name_offset_min"], random_values["lead_name_offset_max"])
+    lead_fontsize = standard_values["lead_fontsize"] * random.uniform(random_values["lead_fontsize_min"], random_values["lead_fontsize_max"])
+    line_width = standard_values["line_width"] * random.uniform(random_values["line_width_min"], random_values["line_width_max"])
 
     # Set max and min coordinates to mark grid. Offset x_max slightly (i.e by 1 column width)
 
@@ -145,32 +296,10 @@ def ecg_plot(
 
     # Mark grid based on whether we want black and white or colour
 
-    major_random_color_sampler_red = random.uniform(0.5, 0.8)
-    major_random_color_sampler_green = random.uniform(0, 0.5)
-    major_random_color_sampler_blue = random.uniform(0, 0.5)
+    color_major = get_major_colors(random_values)
+    color_minor = get_minor_colors(random_values, color_major)
+    color_line = get_signal_color(random_values)
 
-    minor_offset = random.uniform(0, 0.2)
-    minor_random_color_sampler_red = major_random_color_sampler_red + minor_offset
-    minor_random_color_sampler_green = random.uniform(0, 0.5) + minor_offset
-    minor_random_color_sampler_blue = random.uniform(0, 0.5) + minor_offset
-
-    grey_random_color = random.uniform(0, 0.2)
-    color_major = (
-        major_random_color_sampler_red,
-        major_random_color_sampler_green,
-        major_random_color_sampler_blue,
-    )
-    color_minor = (
-        minor_random_color_sampler_red,
-        minor_random_color_sampler_green,
-        minor_random_color_sampler_blue,
-    )
-
-    color_line = (grey_random_color, grey_random_color, grey_random_color)
-    # color_line = (major_random_color_sampler_red,major_random_color_sampler_green,major_random_color_sampler_blue)
-
-    # Set grid
-    # Standard ecg has grid size of 0.5 mV and 0.2 seconds. Set ticks accordingly
 
     ax.set_ylim(y_min, y_max)
     ax.set_xlim(x_min, x_max)
@@ -521,171 +650,16 @@ def ecg_plot(
                     yi = json_dict["height"] - yi
                     straight_line.append([int(yi - 0.5), int(xi - 0.5)])
                 straight_lines_data.append(straight_line)
-
+    for spine in ax.spines.values():
+        spine.set_visible(False)
     plt.savefig(os.path.join(output_dir, tail + ".png"), dpi=resolution)
     plt.close(fig)
     plt.clf()
     plt.cla()
 
-    #######################
-    def copy_figure(fig):
-        """Copy a Matplotlib figure."""
-        buf = BytesIO()
-        pickle.dump(fig, buf)
-        buf.seek(0)
-        return pickle.load(buf)
-
-    def fig_to_array(fig):
-        """Convert a Matplotlib figure to a numpy array."""
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        img = Image.open(buf)
-        return np.array(img)
-
-    def remove_text_objects(fig):
-        """Remove text objects from a Matplotlib figure."""
-        text_objects = fig.findobj(match=plt.Text)
-        for text_obj in text_objects:
-            text_obj.set_visible(False)
-        return text_objects
-
-    def remove_line2d_objects_315(fig):
-        """Remove Line2D objects of length 315 from a Matplotlib figure."""
-        line2d_objects = []
-        for line in fig.findobj(match=plt.Line2D):
-            if len(line.get_xydata()) == 315:
-                line.set_visible(False)
-                line2d_objects.append(line)
-        return line2d_objects
-
-    def remove_line2d_objects_250_1000(fig):
-        """Remove Line2D objects of length 315 from a Matplotlib figure."""
-        line2d_objects = []
-        for line in fig.findobj(match=plt.Line2D):
-            if len(line.get_xydata()) in (250, 1000):
-                line.set_visible(False)
-                line2d_objects.append(line)
-        return line2d_objects
-
-    def remove_line2d_objects_24(fig):
-        """Remove Line2D objects of length 315 from a Matplotlib figure."""
-        line2d_objects = []
-        for line in fig.findobj(match=plt.Line2D):
-            if len(line.get_xydata()) == 24:
-                line.set_visible(False)
-                line2d_objects.append(line)
-        return line2d_objects
-
-    def restore_objects(objects):
-        """Restore visibility of given objects in a Matplotlib figure."""
-        for obj in objects:
-            obj.set_visible(True)
-
-    def render_text_layer(fig):
-        """Render only the text from a Matplotlib figure on a blank canvas."""
-
-        # Step 1: Copy the figure
-        fig_copy = copy_figure(fig)
-        # Step 2: Render the original figure to a numpy array
-        original_array = fig_to_array(fig_copy)
-        # Step 3: Remove everything plotted
-        removed_texts = remove_text_objects(fig_copy)
-        removed_lines_315 = remove_line2d_objects_315(fig_copy)
-        removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
-        removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
-        for line in fig_copy.findobj(match=plt.Line2D):
-            if line.get_linewidth() == grid_line_width:
-                line.set_visible(False)
-
-        # Step 4: Render figure with only specified parts
-        restore_objects(removed_texts)
-        restore_objects(removed_lines_315)
-        greyscale_text = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
-        removed_texts = remove_text_objects(fig_copy)
-        removed_lines_315 = remove_line2d_objects_315(fig_copy)
-
-        restore_objects(removed_control_signal_lines)
-        greyscale_control_signal = 255 - np.max(
-            fig_to_array(fig_copy)[..., :3], axis=-1
-        )
-        removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
-
-        restore_objects(removed_signal_lines)
-        greyscale_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
-        removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
-
-        # Step 6: Restore the visibility of the removed objects
-        for line in fig_copy.findobj(match=plt.Line2D):
-            if line.get_linewidth() == grid_line_width:
-                line.set_visible(True)
-        restore_objects(removed_texts)
-        restore_objects(removed_lines_315)
-        restore_objects(removed_control_signal_lines)
-        restore_objects(removed_signal_lines)
-
-        # fig, ax = plt.subplots(1,3)
-        # ax[0].imshow(greyscale_signal, cmap='gray')
-        # ax[1].imshow(greyscale_control_signal, cmap='gray')
-        # ax[2].imshow(greyscale_text, cmap='gray')
-        # for a in ax:
-        #     a.axis('off')
-        # plt.tight_layout()
-
-        # plt.savefig(os.path.join(output_dir, tail + '_greyscale.png'), dpi=800)
-        # assert False
-
-        return greyscale_signal, greyscale_control_signal, greyscale_text
-
-    #######################
-    signal_map, control_signal_map, text_map = render_text_layer(fig)
-
-    if pad_inches != 0:
-
-        ecg_image = Image.open(os.path.join(output_dir, tail + ".png"))
-
-        right = pad_inches * resolution
-        left = pad_inches * resolution
-        top = pad_inches * resolution
-        bottom = pad_inches * resolution
-        width, height = ecg_image.size
-        new_width = width + right + left
-        new_height = height + top + bottom
-        result_image = Image.new(
-            ecg_image.mode, (new_width, new_height), (255, 255, 255)
-        )
-        result_image.paste(ecg_image, (left, top))
-
-        result_image.save(os.path.join(output_dir, tail + ".png"))
-
-        plt.close("all")
-        plt.close(fig)
-        plt.clf()
-        plt.cla()
-
-    json_dict["leads"] = leads_ds
-
-    ##### MODIFICATIONS #####
-    json_file = os.path.join(output_dir, tail + ".json")
-    with open(json_file, "w") as f:
-        json.dump(json_dict, f)
-
     w, h = json_dict["width"], json_dict["height"]
-    mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
 
-    mask[:, :, 2] = signal_map.astype(np.uint8)
-    mask[:, :, 1] = text_map.astype(np.uint8) + control_signal_map.astype(np.uint8)
-    mask[:, :3] = 0
-    mask[:, -3:] = 0
-    mask[:3, :] = 0
-    mask[-3:, :] = 0
-    mask[:, :, 1][mask[:, :, 2] > 0] = 0
+    save_sementation_map(fig, grid_line_width, output_dir, tail, h, w)
 
-    # Save the sparse tensor
-    mask_file = os.path.join(output_dir, tail + "mask_.png")
-    # save the mask as a png at mask_file
-    print(mask.shape, mask.dtype)
-    Image.fromarray(mask).save(mask_file)
-    ###### END MODIFICATIONS ######
 
     return x_grid_dots, y_grid_dots
