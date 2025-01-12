@@ -55,7 +55,6 @@ def get_augment(
         plotted_pixels,
     ) = read_leads(json_dict["leads"])
 
-
     images = [image[:, :, :3]]
     h, w, _ = image.shape
     rot = random.randint(-rotate, rotate)

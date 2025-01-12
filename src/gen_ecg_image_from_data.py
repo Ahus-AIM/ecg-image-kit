@@ -5,7 +5,6 @@ import json
 import random
 import csv
 import warnings
-import yaml
 import numpy as np
 from PIL import Image
 from scipy.stats import bernoulli
@@ -13,27 +12,10 @@ from helper_functions import find_files
 from extract_leads import get_paper_ecg
 from CreasesWrinkles.creases import get_creased
 from ImageAugmentation.augment import get_augment
+from helper_functions import read_config_file
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings("ignore")
-
-def read_config_file(config_file):
-    """Read YAML config file
-
-    Args:
-        config_file (str): Complete path to the config file
-
-    Returns:
-        configs (dict): Returns dictionary with all the configs
-    """
-    with open(config_file) as f:
-        yamlObject = yaml.safe_load(f)
-
-    args = dict()
-    for key in yamlObject:
-        args[key] = yamlObject[key]
-
-    return args
 
 
 def get_parser():
@@ -189,8 +171,6 @@ def run_single_file(args):
 
     for out in out_array:
         rec_tail, extn = os.path.splitext(out)
-        with open(rec_tail + ".json", "r") as file:
-            json_dict = json.load(file)
         if args.fully_random:
             wrinkles = random.choice((True, False))
             augment = random.choice((True, False))
@@ -231,12 +211,6 @@ def run_single_file(args):
             num_creases_horizontally = 0
             num_creases_vertically = 0
 
-        if args.store_config == 2:
-            json_dict["wrinkles"] = bool(wrinkles)
-            json_dict["crease_angle"] = crease_angle
-            json_dict["number_of_creases_horizontally"] = num_creases_horizontally
-            json_dict["number_of_creases_vertically"] = num_creases_vertically
-
         if augment:
             noise = (
                 args.noise
@@ -268,7 +242,7 @@ def run_single_file(args):
                 temperature=temp,
                 bbox=args.lead_bbox,
                 store_text_bounding_box=args.lead_name_bbox,
-                json_dict=json_dict,
+                json_dict={},
             )
 
         else:
@@ -276,18 +250,6 @@ def run_single_file(args):
             temp = 0
             rotate = 0
             noise = 0
-        if args.store_config == 2:
-            json_dict["augment"] = bool(augment)
-            json_dict["crop"] = crop
-            json_dict["temperature"] = temp
-            json_dict["rotate"] = rotate
-            json_dict["noise"] = noise
-
-        if args.store_config:
-            json_object = json.dumps(json_dict, indent=4)
-
-            with open(rec_tail + ".json", "w") as f:
-                f.write(json_object)
 
     return len(out_array)
 

@@ -52,6 +52,7 @@ random_values = {
     "grey_max": 0.5,
 }
 
+
 def get_major_colors(random_values):
     major_random_color_sampler_red = random.uniform(
         random_values["major_red_min"], random_values["major_red_max"]
@@ -67,6 +68,7 @@ def get_major_colors(random_values):
         major_random_color_sampler_green,
         major_random_color_sampler_blue,
     )
+
 
 def get_minor_colors(random_values, major_colors):
     minor_offset = random.uniform(
@@ -85,11 +87,13 @@ def get_minor_colors(random_values, major_colors):
         minor_random_color_sampler_blue,
     )
 
+
 def get_signal_color(random_values):
     grey_random_color = random.uniform(
         random_values["grey_min"], random_values["grey_max"]
     )
     return (grey_random_color, grey_random_color, grey_random_color)
+
 
 def copy_figure(fig):
     """Copy a Matplotlib figure."""
@@ -97,6 +101,7 @@ def copy_figure(fig):
     pickle.dump(fig, buf)
     buf.seek(0)
     return pickle.load(buf)
+
 
 def fig_to_array(fig):
     """Convert a Matplotlib figure to a numpy array."""
@@ -106,12 +111,14 @@ def fig_to_array(fig):
     img = Image.open(buf)
     return np.array(img)
 
+
 def remove_text_objects(fig):
     """Remove text objects from a Matplotlib figure."""
     text_objects = fig.findobj(match=plt.Text)
     for text_obj in text_objects:
         text_obj.set_visible(False)
     return text_objects
+
 
 def remove_line2d_objects_315(fig):
     """Remove Line2D objects of length 315 from a Matplotlib figure."""
@@ -122,6 +129,7 @@ def remove_line2d_objects_315(fig):
             line2d_objects.append(line)
     return line2d_objects
 
+
 def remove_line2d_objects_250_1000(fig):
     """Remove Line2D objects of length 315 from a Matplotlib figure."""
     line2d_objects = []
@@ -130,6 +138,7 @@ def remove_line2d_objects_250_1000(fig):
             line.set_visible(False)
             line2d_objects.append(line)
     return line2d_objects
+
 
 def remove_line2d_objects_24(fig):
     """Remove Line2D objects of length 315 from a Matplotlib figure."""
@@ -140,10 +149,12 @@ def remove_line2d_objects_24(fig):
             line2d_objects.append(line)
     return line2d_objects
 
+
 def restore_objects(objects):
     """Restore visibility of given objects in a Matplotlib figure."""
     for obj in objects:
         obj.set_visible(True)
+
 
 def render_text_layer(fig, grid_line_width):
     """Render only the text from a Matplotlib figure on a blank canvas."""
@@ -169,9 +180,7 @@ def render_text_layer(fig, grid_line_width):
     removed_lines_315 = remove_line2d_objects_315(fig_copy)
 
     restore_objects(removed_control_signal_lines)
-    greyscale_control_signal = 255 - np.max(
-        fig_to_array(fig_copy)[..., :3], axis=-1
-    )
+    greyscale_control_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
     removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
 
     restore_objects(removed_signal_lines)
@@ -189,6 +198,7 @@ def render_text_layer(fig, grid_line_width):
 
     return greyscale_signal, greyscale_control_signal, greyscale_text
 
+
 def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
     signal_map, control_signal_map, text_map = render_text_layer(fig, grid_line_width)
     mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
@@ -197,6 +207,7 @@ def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
     mask[:, :, 1][mask[:, :, 2] > 0] = 0
     mask_file = os.path.join(output_dir, tail + "_mask.png")
     Image.fromarray(mask).save(mask_file)
+
 
 # Function to plot raw ecg signal
 def ecg_plot(
@@ -253,27 +264,33 @@ def ecg_plot(
     matplotlib.use("Agg")
 
     fonts_folder = "Fonts"
-    font_files = [f for f in os.listdir(fonts_folder) if f.endswith('.ttf')]
+    font_files = [f for f in os.listdir(fonts_folder) if f.endswith(".ttf")]
     random_font = random.choice(font_files)
     font_path = os.path.join(os.getcwd(), fonts_folder, random_font)
     custom_font = matplotlib.font_manager.FontProperties(fname=font_path)
     # matplotlib.rcParams['font.family'] = custom_font.get_name()
 
-
     secs = lead_length_in_seconds
     leads = len(lead_index)
     rows = int(ceil(leads / columns))
-
 
     # Grid calibration
     # Each big grid corresponds to 0.2 seconds and 0.5 mV
     # To do: Select grid size in a better way
     y_grid_size = standard_values["y_grid_size"]
     x_grid_size = standard_values["x_grid_size"]
-    grid_line_width = standard_values["grid_line_width"] * random.uniform(random_values["grid_line_width_min"], random_values["grid_line_width_max"])
-    lead_name_offset = standard_values["lead_name_offset"] * random.uniform(random_values["lead_name_offset_min"], random_values["lead_name_offset_max"])
-    lead_fontsize = standard_values["lead_fontsize"] * random.uniform(random_values["lead_fontsize_min"], random_values["lead_fontsize_max"])
-    line_width = standard_values["line_width"] * random.uniform(random_values["line_width_min"], random_values["line_width_max"])
+    grid_line_width = standard_values["grid_line_width"] * random.uniform(
+        random_values["grid_line_width_min"], random_values["grid_line_width_max"]
+    )
+    lead_name_offset = standard_values["lead_name_offset"] * random.uniform(
+        random_values["lead_name_offset_min"], random_values["lead_name_offset_max"]
+    )
+    lead_fontsize = standard_values["lead_fontsize"] * random.uniform(
+        random_values["lead_fontsize_min"], random_values["lead_fontsize_max"]
+    )
+    line_width = standard_values["line_width"] * random.uniform(
+        random_values["line_width_min"], random_values["line_width_max"]
+    )
 
     # Set max and min coordinates to mark grid. Offset x_max slightly (i.e by 1 column width)
 
@@ -307,7 +324,6 @@ def ecg_plot(
     color_major = get_major_colors(random_values)
     color_minor = get_minor_colors(random_values, color_major)
     color_line = get_signal_color(random_values)
-
 
     ax.set_ylim(y_min, y_max)
     ax.set_xlim(x_min, x_max)
@@ -607,10 +623,31 @@ def ecg_plot(
     rec_file_name = os.path.join(output_dir, tail)
 
     # change x and y res
-    ax.text(2, 0.5, "25mm/s", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
-    ax.text(4, 0.5, "10mm/mV", fontsize=lead_fontsize, fontproperties=custom_font, color=color_line)
+    ax.text(
+        2,
+        0.5,
+        "25mm/s",
+        fontsize=lead_fontsize,
+        fontproperties=custom_font,
+        color=color_line,
+    )
+    ax.text(
+        4,
+        0.5,
+        "10mm/mV",
+        fontsize=lead_fontsize,
+        fontproperties=custom_font,
+        color=color_line,
+    )
     lipsum_str = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, \nwhen an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. \nIt was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-    ax.text(0, 19.5, lipsum_str, fontsize=lead_fontsize*0.7, fontproperties=custom_font, color=color_line)
+    ax.text(
+        0,
+        19.5,
+        lipsum_str,
+        fontsize=lead_fontsize * 0.7,
+        fontproperties=custom_font,
+        color=color_line,
+    )
 
     if show_grid:
         ax.set_xticks(np.arange(x_min, x_max, x_grid_size))
@@ -669,6 +706,5 @@ def ecg_plot(
     w, h = json_dict["width"], json_dict["height"]
 
     save_sementation_map(fig, grid_line_width, output_dir, tail, h, w)
-
 
     return x_grid_dots, y_grid_dots
