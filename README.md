@@ -23,6 +23,12 @@ Please include references to the following articles in any publications:
      pip install -r requirements.txt
      ```
 
+## ECG Data
+
+A few samples from the PTB-XL  dataset are already stored in [data](./data/ptb-xl/00000). If you with to generate a diverse dataset, you should download the full dataset. If you use the examples or the full dataset, please cite:
+
+1. Wagner, P., Strodthoff, N., Bousseljot, R., Samek, W., & Schaeffter, T. (2022). PTB-XL, a large publicly available electrocardiography dataset (version 1.0.3). PhysioNet. doi: [10.13026/kfzx-aw45](https://doi.org/10.13026/kfzx-aw45)
+
 ## Run the pipeline
 1. Take a look in the [config file](./src/config/config.yml)
 2. Run the pipeline with the following command:
