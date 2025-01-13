@@ -7,6 +7,7 @@ from matplotlib.ticker import AutoMinorLocator
 from math import ceil
 from PIL import Image
 from io import BytesIO
+from enum import Enum
 import pickle
 
 standard_values = {
@@ -28,6 +29,13 @@ standard_values = {
     "width": 11,
     "height": 8.5,
 }
+
+
+class Channel(Enum):
+    BG = 0
+    TEXT = 1
+    SIGNAL = 2
+
 
 def get_major_colors(random_values):
     major_random_color_sampler_red = random.uniform(
@@ -176,9 +184,11 @@ def render_text_layer(fig, grid_line_width):
 def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
     signal_map, control_signal_map, text_map = render_text_layer(fig, grid_line_width)
     mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
-    mask[:, :, 2] = signal_map.astype(np.uint8)
-    mask[:, :, 1] = np.max([text_map, control_signal_map], axis=0).astype(np.uint8)
-    mask[:, :, 1][mask[:, :, 2] > 0] = 0
+    mask[:, :, Channel.SIGNAL] = signal_map.astype(np.uint8)
+    mask[:, :, Channel.TEXT] = np.max([text_map, control_signal_map], axis=0).astype(
+        np.uint8
+    )
+    mask[:, :, Channel.TEXT][mask[:, :, Channel.SIGNAL] > 0] = 0
     mask_file = os.path.join(output_dir, tail[:5] + "_mask" + tail[5:] + ".png")
     Image.fromarray(mask).save(mask_file)
 
