@@ -11,6 +11,7 @@ Please include references to the following articles in any publications:
 
 ## Contributors
 - Elias Stenhede, Department of Medical Technology and E-health, Akershus University Hospital, Norway
+- Agnar Martin Bjørnstad, Department of Medical Technology and E-health, Akershus University Hospital, Norway
 - Deepanshi, Department of Biomedical Informatics, Emory University, GA, US
 - Kshama Kodthalu Shivashankara, School of Electrical and Computer Engineering, Georgia Institute of Technology, Atlanta, GA, US
 - Matthew A Reyna, Department of Biomedical Informatics, Emory University, GA, US
@@ -18,9 +19,18 @@ Please include references to the following articles in any publications:
 - Reza Sameni (contact person), Department of Biomedical Informatics and Biomedical Engineering, Emory University and Georgia Tech, GA, US
 
 ## Installation
-- Set up with pip:
+- Clone this repository and move to the root folder of the repository.
+- Create a venv with python3.12:
      ```
-     pip install -r requirements.txt
+     python3.12 -m venv venv
+     ```
+- Activate the venv:
+     ```
+     source venv/bin/activate
+     ```
+- Install the required packages:
+     ```
+     python3 -m pip install -r requirements.txt
      ```
 
 ## ECG Data
