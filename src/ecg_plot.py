@@ -158,14 +158,33 @@ def compute_classes(fig, grid_line_width):
 
 
 def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
+    def normalize_uint8(img):
+        return np.ceil((img.astype(float) / img.max().astype(float)) * 255).astype(
+            np.uint8
+        )
+
     signal_map, control_signal_map, text_map = compute_classes(fig, grid_line_width)
     mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
     mask[:, :, Channel.SIGNAL.value] = signal_map.astype(np.uint8)
     mask[:, :, Channel.TEXT.value] = np.max(
         [text_map, control_signal_map], axis=0
     ).astype(np.uint8)
-    mask[:, :, Channel.TEXT.value][mask[:, :, Channel.SIGNAL.value] > 0] = 0
-    mask_file = os.path.join(output_dir, tail[:5] + "_mask" + tail[5:] + ".png")
+
+    for v in [Channel.SIGNAL.value, Channel.TEXT.value]:
+        mask[:, :, v] = normalize_uint8(mask[:, :, v])
+
+    mask[:, :, Channel.TEXT.value][mask[:, :, Channel.SIGNAL.value] > 0] = np.floor(
+        (
+            255 - mask[:, :, Channel.SIGNAL.value][mask[:, :, Channel.SIGNAL.value] > 0]
+        ).astype(float)
+        * mask[:, :, Channel.TEXT.value][mask[:, :, Channel.SIGNAL.value] > 0].astype(
+            float
+        )
+        / 255
+    ).astype(np.uint8)
+
+    filename = f'{tail.split(".")[0]}_mask.png'
+    mask_file = os.path.join(output_dir, filename)
     Image.fromarray(mask).save(mask_file)
 
 
