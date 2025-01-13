@@ -96,99 +96,75 @@ def fig_to_array(fig):
     return np.array(img)
 
 
-def remove_text_objects(fig):
-    """Remove text objects from a Matplotlib figure."""
-    text_objects = fig.findobj(match=plt.Text)
-    for text_obj in text_objects:
-        text_obj.set_visible(False)
-    return text_objects
+def get_text_objects(fig):
+    return fig.findobj(match=plt.Text)
 
 
-def remove_line2d_objects_315(fig):
-    """Remove Line2D objects of length 315 from a Matplotlib figure."""
+def get_line2d_objects_315(fig):
     line2d_objects = []
     for line in fig.findobj(match=plt.Line2D):
         if len(line.get_xydata()) == 315:
-            line.set_visible(False)
             line2d_objects.append(line)
     return line2d_objects
 
 
-def remove_line2d_objects_250_1000(fig):
-    """Remove Line2D objects of length 315 from a Matplotlib figure."""
+def get_line2d_objects_250_1000(fig):
     line2d_objects = []
     for line in fig.findobj(match=plt.Line2D):
         if len(line.get_xydata()) in (250, 1000):
-            line.set_visible(False)
             line2d_objects.append(line)
     return line2d_objects
 
 
-def remove_line2d_objects_24(fig):
-    """Remove Line2D objects of length 315 from a Matplotlib figure."""
-    line2d_objects = []
-    for line in fig.findobj(match=plt.Line2D):
-        if len(line.get_xydata()) == 24:
-            line.set_visible(False)
-            line2d_objects.append(line)
-    return line2d_objects
+def get_lines2d(fig, grid_line_width):
+    return [
+        line
+        for line in fig.findobj(match=plt.Line2D)
+        if line.get_linewidth() == grid_line_width
+    ]
 
 
-def restore_objects(objects):
-    """Restore visibility of given objects in a Matplotlib figure."""
+def get_line2d_objects_24(fig):
+    return [
+        line for line in fig.findobj(match=plt.Line2D) if len(line.get_xydata()) == 24
+    ]
+
+
+def toggle_visibility(objects, set_visible):
     for obj in objects:
-        obj.set_visible(True)
+        obj.set_visible(set_visible)
 
 
-def render_text_layer(fig, grid_line_width):
-    """Render only the text from a Matplotlib figure on a blank canvas."""
-
-    # Step 1: Copy the figure
+def compute_classes(fig, grid_line_width):
     fig_copy = copy_figure(fig)
-    # Step 2: Remove everything plotted
-    removed_texts = remove_text_objects(fig_copy)
-    removed_lines_315 = remove_line2d_objects_315(fig_copy)
-    removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
-    removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
-    for line in fig_copy.findobj(match=plt.Line2D):
-        if line.get_linewidth() == grid_line_width:
-            line.set_visible(False)
+    toggle_visibility(get_lines2d(fig_copy, grid_line_width), False)
 
-    # Step 3: Render figure with only specified parts
-    restore_objects(removed_texts)
-    restore_objects(removed_lines_315)
-    greyscale_text = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
-    removed_texts = remove_text_objects(fig_copy)
-    removed_lines_315 = remove_line2d_objects_315(fig_copy)
+    class_objects = [
+        get_line2d_objects_250_1000(fig_copy),  # Signal.
+        get_line2d_objects_24(fig_copy),  # Control signal.
+        get_text_objects(fig_copy) + get_line2d_objects_315(fig_copy),  # Text
+    ]
+    all_objects = [obj for objects in class_objects for obj in objects]
+    toggle_visibility(all_objects, False)
 
-    restore_objects(removed_control_signal_lines)
-    greyscale_control_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
-    removed_control_signal_lines = remove_line2d_objects_24(fig_copy)
+    grayscales = []
 
-    restore_objects(removed_signal_lines)
-    greyscale_signal = 255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1)
-    removed_signal_lines = remove_line2d_objects_250_1000(fig_copy)
-
-    # Step 4: Restore the visibility of the removed objects
-    for line in fig_copy.findobj(match=plt.Line2D):
-        if line.get_linewidth() == grid_line_width:
-            line.set_visible(True)
-    restore_objects(removed_texts)
-    restore_objects(removed_lines_315)
-    restore_objects(removed_control_signal_lines)
-    restore_objects(removed_signal_lines)
-
-    return greyscale_signal, greyscale_control_signal, greyscale_text
+    for objects in class_objects:
+        toggle_visibility(objects, True)
+        grayscales.append(255 - np.max(fig_to_array(fig_copy)[..., :3], axis=-1))
+        toggle_visibility(objects, False)
+    toggle_visibility(get_lines2d(fig_copy, grid_line_width), True)
+    return tuple(grayscales)
 
 
 def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
-    signal_map, control_signal_map, text_map = render_text_layer(fig, grid_line_width)
+    signal_map, control_signal_map, text_map = compute_classes(fig, grid_line_width)
     mask = np.zeros((h, w, 3), dtype=np.uint8)  # Initialize as uint8 for 0 or 1 values
-    mask[:, :, Channel.SIGNAL] = signal_map.astype(np.uint8)
-    mask[:, :, Channel.TEXT] = np.max([text_map, control_signal_map], axis=0).astype(
-        np.uint8
-    )
-    mask[:, :, Channel.TEXT][mask[:, :, Channel.SIGNAL] > 0] = 0
+    mask[:, :, Channel.SIGNAL.value] = signal_map.astype(np.uint8)
+    mask[:, :, Channel.TEXT.value] = np.max(
+        [text_map, control_signal_map], axis=0
+    ).astype(np.uint8)
+    mask[:, :, Channel.TEXT.value][mask[:, :, Channel.SIGNAL.value] > 0] = 0
     mask_file = os.path.join(output_dir, tail[:5] + "_mask" + tail[5:] + ".png")
     Image.fromarray(mask).save(mask_file)
 
