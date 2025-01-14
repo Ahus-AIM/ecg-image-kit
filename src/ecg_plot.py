@@ -111,7 +111,7 @@ def get_line2d_objects_315(fig):
 def get_line2d_objects_250_1000(fig):
     line2d_objects = []
     for line in fig.findobj(match=plt.Line2D):
-        if len(line.get_xydata()) in (250, 1000):
+        if len(line.get_xydata()) in (250, 1000, 4000):
             line2d_objects.append(line)
     return line2d_objects
 
@@ -126,7 +126,9 @@ def get_lines2d(fig, grid_line_width):
 
 def get_line2d_objects_24(fig):
     return [
-        line for line in fig.findobj(match=plt.Line2D) if len(line.get_xydata()) == 24
+        line
+        for line in fig.findobj(match=plt.Line2D)
+        if len(line.get_xydata()) in (24, 84)
     ]
 
 
@@ -157,7 +159,7 @@ def compute_classes(fig, grid_line_width):
     return tuple(grayscales)
 
 
-def save_sementation_map(fig, grid_line_width, output_dir, tail, h, w):
+def save_segmentation_map(fig, grid_line_width, output_dir, tail, h, w):
     def normalize_uint8(img):
         return np.ceil((img.astype(float) / img.max().astype(float)) * 255).astype(
             np.uint8
@@ -627,6 +629,6 @@ def ecg_plot(
 
     w, h = json_dict["width"], json_dict["height"]
 
-    save_sementation_map(fig, grid_line_width, output_dir, tail, h, w)
+    save_segmentation_map(fig, grid_line_width, output_dir, tail, h, w)
 
     return x_grid_dots, y_grid_dots

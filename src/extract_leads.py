@@ -86,7 +86,12 @@ def get_paper_ecg(
             f"Recording is too short to plot (less than 10 seconds), skipping. First row of header file: {full_header.split(newline)[0]}"
         )
         return None
-
+    if rate not in [100.0, 400.0]:
+        newline = "\n"
+        print(
+            f"Sampling frequency is not 100 or 400 Hz, skipping. First row of header file: {full_header.split(newline)[0]}"
+        )
+        return None
     output_header_file = os.path.join(output_directory, tail)
     with open(output_header_file, "w") as f:
         f.write("\n".join(full_lines))
