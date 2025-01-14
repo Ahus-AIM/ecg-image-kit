@@ -1,10 +1,10 @@
 input_directory: "./data/ptb-xl/"
 header_directory: "./data/ptb-xl/"
 output_directory: "./data/generated_images/"
+ptb_xl_structure: true
 
 # start and end indices of ECG records
-start_index: 1
-end_index: 5
+num_samples: 5
 
 # image parameters
 wrinkles: true # overlay wrinkles on the ECG images

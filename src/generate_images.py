@@ -33,17 +33,24 @@ def run_single_file(configs):
     standard_colours = configs.get("standard_colours", False)
 
     # Read the start and end indices from the config
-    start_index = configs["start_index"]
-    end_index = configs["end_index"]
+    num_samples = configs["num_samples"]
 
     # Dynamically generate input and header files based on the indices
-    loading_bar = tqdm(range(start_index, end_index + 1), desc="Generating ECG Images")
+    loading_bar = tqdm(range(1, num_samples + 1), desc="Generating ECG Images")
+    if not configs.get("ptb_xl_structure", False):
+        files = os.listdir(input_directory)
+        files.sort()
+        files = [f for f in files if f.endswith(".hea")]
     for i in loading_bar:
-        folder = f"{i // 1000 * 1000:05d}"
-        file_index = f"{i:05d}"
+        if configs.get("ptb_xl_structure", False):
+            folder = f"{i // 1000 * 1000:05d}"
+            file_index = f"{i:05d}"
 
-        input_file = os.path.join(input_directory, folder, f"{file_index}_lr.dat")
-        header_file = os.path.join(header_directory, folder, f"{file_index}_lr.hea")
+            input_file = os.path.join(input_directory, folder, f"{file_index}_lr.dat")
+            header_file = os.path.join(header_directory, folder, f"{file_index}_lr.hea")
+        else:
+            input_file = os.path.join(input_directory, files[i].replace(".hea", ".dat"))
+            header_file = os.path.join(header_directory, files[i])
 
         out_array = get_paper_ecg(
             input_file=input_file,
@@ -69,26 +76,27 @@ def run_single_file(configs):
             seed=configs.get("seed", 42),
         )
 
-        # Optionally apply wrinkles if needed
-        wrinkles_config = configs.get("wrinkles_config", {})
-        if wrinkles:
-            for out in out_array:
-                out = get_creased(
-                    out,
-                    output_directory=output_directory,
-                    ifWrinkles=wrinkles_config.get("ifWrinkles", True),
-                    ifCreases=wrinkles_config.get("ifCreases", True),
-                    crease_angle=wrinkles_config.get(
-                        "crease_angle", random.choice(range(0, 90))
-                    ),
-                    num_creases_vertically=wrinkles_config.get(
-                        "num_creases_vertically", random.choice(range(1, 5))
-                    ),
-                    num_creases_horizontally=wrinkles_config.get(
-                        "num_creases_horizontally", random.choice(range(1, 5))
-                    ),
-                    bbox=wrinkles_config.get("bbox", False),
-                )
+        if out_array is not None:
+            # Optionally apply wrinkles if needed
+            wrinkles_config = configs.get("wrinkles_config", {})
+            if wrinkles:
+                for out in out_array:
+                    out = get_creased(
+                        out,
+                        output_directory=output_directory,
+                        ifWrinkles=wrinkles_config.get("ifWrinkles", True),
+                        ifCreases=wrinkles_config.get("ifCreases", True),
+                        crease_angle=wrinkles_config.get(
+                            "crease_angle", random.choice(range(0, 90))
+                        ),
+                        num_creases_vertically=wrinkles_config.get(
+                            "num_creases_vertically", random.choice(range(1, 5))
+                        ),
+                        num_creases_horizontally=wrinkles_config.get(
+                            "num_creases_horizontally", random.choice(range(1, 5))
+                        ),
+                        bbox=wrinkles_config.get("bbox", False),
+                    )
     return len(out_array)
 
 

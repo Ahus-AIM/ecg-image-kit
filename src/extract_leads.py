@@ -13,6 +13,20 @@ from helper_functions import (
     write_wfdb_file,
 )
 from ecg_plot import ecg_plot
+from scipy.signal import butter, lfilter
+
+
+def bandpass_filter(signal, rate, lowcut, highcut, pad_len=2048):
+    """
+    Bandpass filter the data between lowcut and highcut.
+    """
+    padded_signal = np.pad(signal, pad_len, mode="reflect")
+    nyquist = 0.5 * rate
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(1, [low, high], btype="band")
+    padded_filtered = lfilter(b, a, padded_signal, axis=0)
+    return padded_filtered[pad_len:-pad_len]
 
 
 def get_paper_ecg(
@@ -55,10 +69,6 @@ def get_paper_ecg(
 
     head, tail = os.path.split(full_header_file)
 
-    output_header_file = os.path.join(output_directory, tail)
-    with open(output_header_file, "w") as f:
-        f.write("\n".join(full_lines))
-
     # Load the full-lead recording file, extract the lead data, and save the reduced-lead recording file.
     recording = load_recording(full_recording_file, full_header, key)
 
@@ -66,6 +76,20 @@ def get_paper_ecg(
     rate = get_frequency(full_header)
 
     full_leads = standardize_leads(full_leads)
+
+    recording = bandpass_filter(recording, rate, 0.5, min(150, rate / 2 - 1))
+    if recording.max() > 10 or recording.min() < -10:
+        recording = recording * 10 / max(abs(recording.max()), abs(recording.min()))
+    if recording.shape[0] < rate * 10:
+        newline = "\n"
+        print(
+            f"Recording is too short to plot (less than 10 seconds), skipping. First row of header file: {full_header.split(newline)[0]}"
+        )
+        return None
+
+    output_header_file = os.path.join(output_directory, tail)
+    with open(output_header_file, "w") as f:
+        f.write("\n".join(full_lines))
 
     if len(full_leads) == 2:
         full_mode = "None"
