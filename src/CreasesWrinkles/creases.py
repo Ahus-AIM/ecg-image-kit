@@ -248,7 +248,6 @@ def get_creased(
             ),
         )
         wrinklesImg = quilt(wrinkle_file_name, 250, (1, 1), "Cut")
-        wrinklesImg = cv2.cvtColor(wrinklesImg, cv2.COLOR_BGR2GRAY)
         wrinklesImg = wrinklesImg.astype("float32") / 255.0
 
     img_path = filename
@@ -257,24 +256,8 @@ def get_creased(
     hh, ww = img.shape[:2]
 
     if ifWrinkles:
-        # resize wrinkles to same size as ecg input image
         wrinkles = cv2.resize(wrinklesImg, (ww, hh), fx=0, fy=0)
-        # shift image brightness so mean is (near) mid gray
-        mean = np.mean(wrinkles)
-        shift = mean - 0.4
-        shift_img = np.full_like(wrinkles, shift, dtype=np.float32)
-        wrinkles = cv2.subtract(wrinkles, shift_img)
-
-        transform = wrinkles * 1.2
-        # threshold wrinkles and invert
-        thresh = cv2.threshold(transform, 0.6, 1, cv2.THRESH_BINARY)[1]
-        thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-        thresh_inv = 1 - thresh
-        transform = cv2.cvtColor(transform, cv2.COLOR_GRAY2BGR)
-
-        low = 2.0 * img * transform
-        high = 1 - 2.0 * (1 - img) * (1 - transform)
-        img = low * thresh_inv + high * thresh
+        img = img * wrinkles
 
     img = (255 * img).clip(0, 255).astype(np.uint8)
 
